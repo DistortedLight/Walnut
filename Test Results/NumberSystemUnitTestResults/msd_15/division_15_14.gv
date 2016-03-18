@@ -1,0 +1,10 @@
+digraph G {
+label = "(b): msd_15:15/14=1";
+rankdir = LR;
+node [shape = circle, label="0", fontsize=12]0;
+node [shape = doublecircle, label="1", fontsize=12]1;
+node [shape = point ]; qi
+qi ->0;
+0 -> 0[ label = "(0)"];
+0 -> 1[ label = "(1)"];
+}

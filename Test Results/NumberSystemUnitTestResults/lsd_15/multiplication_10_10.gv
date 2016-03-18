@@ -1,0 +1,12 @@
+digraph G {
+label = "(b): lsd_15:10*10=100";
+rankdir = LR;
+node [shape = circle, label="0", fontsize=12]0;
+node [shape = circle, label="1", fontsize=12]1;
+node [shape = doublecircle, label="2", fontsize=12]2;
+node [shape = point ]; qi
+qi ->0;
+0 -> 1[ label = "(10)"];
+1 -> 2[ label = "(6)"];
+2 -> 2[ label = "(0)"];
+}

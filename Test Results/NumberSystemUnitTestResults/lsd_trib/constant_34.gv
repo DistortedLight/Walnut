@@ -1,0 +1,20 @@
+digraph G {
+label = "(c): lsd_trib:34";
+rankdir = LR;
+node [shape = circle, label="0", fontsize=12]0;
+node [shape = circle, label="1", fontsize=12]1;
+node [shape = circle, label="2", fontsize=12]2;
+node [shape = circle, label="3", fontsize=12]3;
+node [shape = circle, label="4", fontsize=12]4;
+node [shape = circle, label="5", fontsize=12]5;
+node [shape = doublecircle, label="6", fontsize=12]6;
+node [shape = point ]; qi
+qi ->0;
+0 -> 1[ label = "(1)"];
+1 -> 2[ label = "(1)"];
+2 -> 3[ label = "(0)"];
+3 -> 4[ label = "(1)"];
+4 -> 5[ label = "(0)"];
+5 -> 6[ label = "(1)"];
+6 -> 6[ label = "(0)"];
+}
