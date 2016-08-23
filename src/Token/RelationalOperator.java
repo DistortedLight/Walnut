@@ -21,6 +21,7 @@ import Main.Expression;
 import Automata.Automaton;
 import Automata.NumberSystem;
 import Main.Type;
+import Main.UtilityMethods;
 
 import java.util.HashSet;
 import java.util.Stack;
@@ -38,7 +39,7 @@ public class RelationalOperator extends Operator{
 	public String toString(){
 		return op+"_"+number_system;
 	}
-	public void act(Stack<Expression> S) throws Exception{
+	public void act(Stack<Expression> S,boolean print,String prefix,StringBuffer log) throws Exception{
 
 		if(S.size() < getArity())throw new Exception("operator " + op + " requires " + getArity()+ " operands");
 		Expression b = S.pop();
@@ -52,16 +53,21 @@ public class RelationalOperator extends Operator{
 			S.push(new Expression(a+op+b,new Automaton(compare(a.constant,b.constant ))));	
 			return;
 		}
-		else if((a.is(Type.arithmetic) || a.is(Type.variable))
+		String preStep = prefix + "computing " + a+op+b;  
+		log.append(preStep + UtilityMethods.newLine());
+		if(print){
+			System.out.println(preStep);
+		}
+		if((a.is(Type.arithmetic) || a.is(Type.variable))
 				&& (b.is(Type.arithmetic) || b.is(Type.variable))){
 			Automaton M = number_system.comparison(a.identifier, b.identifier, op);
 			if(a.is(Type.arithmetic)){
-				M = M.and(a.M);
-				M.quantify(a.identifier);
+				M = M.and(a.M,print,prefix+" ",log);
+				M.quantify(a.identifier,print,prefix+" ",log);
 			}
 			if(b.is(Type.arithmetic)){
-				M = M.and(b.M);
-				M.quantify(b.identifier);
+				M = M.and(b.M,print,prefix+" ",log);
+				M.quantify(b.identifier,print,prefix+" ",log);
 			}
 			
 			S.push(new Expression(a+op+b,M));
@@ -69,8 +75,8 @@ public class RelationalOperator extends Operator{
 		else if(a.is(Type.numberLiteral) && ((b.is(Type.arithmetic) || b.is(Type.variable)))){
 			Automaton M = number_system.comparison(a.constant, b.identifier, op);
 			if(b.is(Type.arithmetic)){
-				M = M.and(b.M);
-				M.quantify(b.identifier);
+				M = M.and(b.M,print,prefix+" ",log);
+				M.quantify(b.identifier,print,prefix+" ",log);
 			}
 			S.push(new Expression(a+op+b,M));
 		}
@@ -78,36 +84,41 @@ public class RelationalOperator extends Operator{
 				&& b.is(Type.numberLiteral)){
 			Automaton M = number_system.comparison(a.identifier, b.constant, op);
 			if(a.is(Type.arithmetic)){
-				M = M.and(a.M);
-				M.quantify(a.identifier);
+				M = M.and(a.M,print,prefix+" ",log);
+				M.quantify(a.identifier,print,prefix+" ",log);
 			}	
 			S.push(new Expression(a+op+b,M));
 		}
 		else if(a.is(Type.word) && b.is(Type.word)){
-			Automaton M = a.W.compare(b.W, op);
-			M = M.and(a.M);
-			M = M.and(b.M);
-			M.quantify(new HashSet<String>(a.list_of_identifiers_to_quantify));
-			M.quantify(new HashSet<String>(b.list_of_identifiers_to_quantify));			
+			Automaton M = a.W.compare(b.W, op,print,prefix+" ",log);
+			M = M.and(a.M,print,prefix+" ",log);
+			M = M.and(b.M,print,prefix+" ",log);
+			M.quantify(new HashSet<String>(a.list_of_identifiers_to_quantify),print,prefix+" ",log);
+			M.quantify(new HashSet<String>(b.list_of_identifiers_to_quantify),print,prefix+" ",log);			
 			S.push(new Expression(a+op+b,M));
 		}
 		else if(a.is(Type.word) && b.is(Type.alphabetLetter)){
-			a.W.compare(b.constant, op);
+			a.W.compare(b.constant, op,print,prefix+" ",log);
 			Automaton M = a.W;
-			M = M.and(a.M);
-			M.quantify(new HashSet<String>(a.list_of_identifiers_to_quantify));
+			M = M.and(a.M,print,prefix+" ",log);
+			M.quantify(new HashSet<String>(a.list_of_identifiers_to_quantify),print,prefix+" ",log);
 			S.push(new Expression(a+op+b,M));
 		}
 		else if(a.is(Type.alphabetLetter) && b.is(Type.word)){
-			b.W.compare(a.constant, reverseOperator(op));
+			b.W.compare(a.constant, reverseOperator(op),print,prefix+" ",log);
 			Automaton M = b.W;
-			M = M.and(b.M);
-			M.quantify(new HashSet<String>(b.list_of_identifiers_to_quantify));
+			M = M.and(b.M,print,prefix+" ",log);
+			M.quantify(new HashSet<String>(b.list_of_identifiers_to_quantify),print,prefix+" ",log);
 			S.push(new Expression(a+op+b,M));
 		}
 		else{
 			throw new Exception("operator " + op + " cannot be applied to operands "+a+" and " +b+ " of types " + a.getType() +" and " + b.getType() + " respectively");
 		}	
+		String postStep = prefix + "computed " + a+op+b;  
+		log.append(postStep + UtilityMethods.newLine());
+		if(print){
+			System.out.println(postStep);
+		}
 	}
 	private boolean compare(int a,int b){
 		switch(op){

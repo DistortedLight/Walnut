@@ -1,0 +1,48 @@
+----------------------------------------
+Performance Test Result for Walnut with dk.bricks
+Number of runs: 1
+Number of testcases: 373
+1th run: 63665ms
+
+total: 63665ms
+run average: 63665ms
+testcase average: 170ms
+----------------------------------------
+----------------------------------------
+Performance Test Result for Walnut with Valmari without refactoring
+Number of runs: 1
+Number of testcases: 373
+1th run: 41768ms
+
+total: 41768ms
+run average: 41768ms
+testcase average: 111ms
+----------------------------------------
+----------------------------------------
+Performance Test Result for Walnut with Valmari without refactoring
+Number of runs: 5
+Number of testcases: 373
+1th run: 37450ms
+2th run: 31210ms
+3th run: 34167ms
+4th run: 30235ms
+5th run: 32321ms
+
+total: 165383ms
+run average: 33076ms
+testcase average: 88ms
+----------------------------------------
+----------------------------------------
+Performance Test Result for Walnut with dk.bricks
+Number of runs: 5
+Number of testcases: 373
+1th run: 71801ms
+2th run: 71664ms
+3th run: 60358ms
+4th run: 64083ms
+5th run: 64615ms
+
+total: 332521ms
+run average: 66504ms
+testcase average: 178ms
+----------------------------------------

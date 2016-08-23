@@ -25,6 +25,7 @@ import java.util.Stack;
 import Main.Expression;
 import Automata.Automaton;
 import Main.Type;
+import Main.UtilityMethods;
 
 public class LogicalOperator extends Operator{
 	int number_of_quantified_variables;
@@ -44,47 +45,72 @@ public class LogicalOperator extends Operator{
 		setPositionInPredicate(position);
 	}
 
-	public void act(Stack<Expression> S) throws Exception{
+	public void act(Stack<Expression> S,boolean print,String prefix,StringBuffer log) throws Exception{
 		if(S.size() < getArity())throw new Exception("operator " + op + " requires " + getArity()+ " operands");
 		
-		if(op.equals("~") || op.equals("`")){actNegationOrReverse(S);return;}
-		if(op.equals("E") || op.equals("A")){actQuantifier(S);return;}
+		if(op.equals("~") || op.equals("`")){actNegationOrReverse(S,print,prefix,log);return;}
+		if(op.equals("E") || op.equals("A")){actQuantifier(S,print,prefix,log);return;}
 		
 		Expression b = S.pop();
 		Expression a = S.pop();
 		
 		if(a.is(Type.automaton) && b.is(Type.automaton)){
+			String preStep = prefix + "computing "+a+op+b;  
+			log.append(preStep + UtilityMethods.newLine());
+			if(print){
+				System.out.println(preStep);
+			}
 			switch(op){
-			case "&":S.push(new Expression("("+a+op+b+")",a.M.and(b.M)));break;
-			case "|":S.push(new Expression("("+a+op+b+")",a.M.or(b.M)));break;
-			case "^":S.push(new Expression("("+a+op+b+")",a.M.xor(b.M)));break;
-			case "=>":S.push(new Expression("("+a+op+b+")",a.M.imply(b.M)));break;
-			case "<=>":S.push(new Expression("("+a+op+b+")",a.M.iff(b.M)));break;
+				case "&":S.push(new Expression("("+a+op+b+")",a.M.and(b.M,print,prefix+" ",log)));break;
+				case "|":S.push(new Expression("("+a+op+b+")",a.M.or(b.M,print,prefix+" ",log)));break;
+				case "^":S.push(new Expression("("+a+op+b+")",a.M.xor(b.M,print,prefix+" ",log)));break;
+				case "=>":S.push(new Expression("("+a+op+b+")",a.M.imply(b.M,print,prefix+" ",log)));break;
+				case "<=>":S.push(new Expression("("+a+op+b+")",a.M.iff(b.M,print,prefix+" ",log)));break;
+			}
+			String postStep = prefix + "computed "+a+op+b;  
+			log.append(postStep + UtilityMethods.newLine());
+			if(print){
+				System.out.println(postStep);
 			}
 			return;
 		}	
 		throw new Exception("operator " + op + " cannot be applied to operands "+a +" and "+b +" of types " + a.getType() +" and " + b.getType() + " respectively");
 			
 	}
-	private void actNegationOrReverse(Stack<Expression> S) throws Exception{
+	private void actNegationOrReverse(Stack<Expression> S,boolean print,String prefix,StringBuffer log) throws Exception{
 		Expression a = S.pop();
 		if(a.is(Type.automaton)){
+			String preStep = prefix + "computing "+op + a;  
+			log.append(preStep + UtilityMethods.newLine());
+			if(print){
+				System.out.println(preStep);
+			}
 			if(op.equals("`"))
-				a.M.reverse();
+				a.M.reverse(print,prefix+" ",log);
 			if(op.equals("~"))
-				a.M.not();
+				a.M.not(print,prefix+" ",log);
 			S.push(new Expression(op + a,a.M));
+			String postStep = prefix + "computed "+op+a;  
+			log.append(postStep + UtilityMethods.newLine());
+			if(print){
+				System.out.println(postStep);
+			}
 			return;
 		}
 		throw new Exception("operator " + op + " cannot be applied to the operand "+a +" of type " + a.getType());		
 	}
-	private void actQuantifier(Stack<Expression> S) throws Exception{
+	private void actQuantifier(Stack<Expression> S,boolean print,String prefix,StringBuffer log) throws Exception{
 		String stringValue = "("+op + " ";
 		Stack<Expression> temp = new Stack<Expression>();
 		List<Expression> operands = new ArrayList<Expression>();
 		Automaton M = null;
 		for(int i = 0; i < getArity();i++){
 			temp.push(S.pop());
+		}
+		String preStep = prefix + "computing quantifier "+op;  
+		log.append(preStep + UtilityMethods.newLine());
+		if(print){
+			System.out.println(preStep);
 		}
 		List<String> list_of_identifiers_to_quantify = new ArrayList<String>();
 		for(int i = 0 ; i < getArity();i++){
@@ -105,16 +131,21 @@ public class LogicalOperator extends Operator{
 					throw new Exception("the last operand of "+op+" can only be of type " + Type.automaton);
 				M = operands.get(i).M;
 				if(op.equals("E")){
-					M.quantify(new HashSet<String>(list_of_identifiers_to_quantify));
+					M.quantify(new HashSet<String>(list_of_identifiers_to_quantify),print,prefix+" ",log);
 				}
 				else{
-					M.not();
-					M.quantify(new HashSet<String>(list_of_identifiers_to_quantify));
-					M.not();
+					M.not(print,prefix+" ",log);
+					M.quantify(new HashSet<String>(list_of_identifiers_to_quantify),print,prefix+" ",log);
+					M.not(print,prefix+" ",log);
 				}
 			}
 		}
 		stringValue += ")";
 		S.push(new Expression(stringValue,M));
+		String postStep = prefix + "computed quantifier "+stringValue;  
+		log.append(postStep + UtilityMethods.newLine());
+		if(print){
+			System.out.println(postStep);
+		}
 	}
 }

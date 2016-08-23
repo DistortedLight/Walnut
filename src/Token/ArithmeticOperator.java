@@ -23,6 +23,7 @@ import Main.Expression;
 import Automata.Automaton;
 import Automata.NumberSystem;
 import Main.Type;
+import Main.UtilityMethods;
 
 
 public class ArithmeticOperator extends Operator{
@@ -37,7 +38,7 @@ public class ArithmeticOperator extends Operator{
 	public String toString(){
 		return op+"_"+number_system;
 	}
-	public void act(Stack<Expression> S) throws Exception{
+	public void act(Stack<Expression> S,boolean print,String prefix,StringBuffer log) throws Exception{
 		if(S.size() < getArity())throw new Exception("operator " + op + " requires " + getArity()+ " operands");
 		Expression b = S.pop();
 		Expression a = S.pop();
@@ -87,14 +88,24 @@ public class ArithmeticOperator extends Operator{
 		else{
 			M = number_system.arithmetic(a.identifier, b.identifier, c, op);
 		}
+		String preStep = prefix + "computing " + a+op+b;  
+		log.append(preStep + UtilityMethods.newLine());
+		if(print){
+			System.out.println(preStep);
+		}
 		if(a.is(Type.arithmetic)){
-			M = M.and(a.M);
-			M.quantify(a.identifier);
+			M = M.and(a.M,print,prefix+" ",log);
+			M.quantify(a.identifier,print,prefix+" ",log);
 		}
 		if(b.is(Type.arithmetic)){
-			M = M.and(b.M);
-			M.quantify(b.identifier);
+			M = M.and(b.M,print,prefix+" ",log);
+			M.quantify(b.identifier,print,prefix+" ",log);
 		}
-		S.push(new Expression("("+a+op+b+")",M,c));		
+		S.push(new Expression("("+a+op+b+")",M,c));	
+		String postStep = prefix + "computed " + a+op+b;  
+		log.append(postStep + UtilityMethods.newLine());
+		if(print){
+			System.out.println(postStep);
+		}
 	}
 }

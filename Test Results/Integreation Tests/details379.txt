@@ -1,0 +1,75 @@
+computing n+1
+computed n+1
+computing fibmr(...)
+ computing &:59 states - 4 states
+ computing cross product:59 states - 4 states
+ computed cross product:37 states - 0ms
+  minimizing:37 states
+   determinizing:37 states
+   determinized:37 states - 0ms
+  minimized:22 states - 0ms
+ computed &:22 states - 0ms
+ quantifying:22 states
+  minimizing:22 states
+   determinizing:22 states
+   determinized:26 states - 0ms
+  minimized:26 states - 0ms
+ quantified:26 states - 0ms
+ fixing leading zeros:26 states
+  determinizing:26 states
+  determinized:26 states - 0ms
+  minimizing:26 states
+   determinizing:26 states
+   determinized:26 states - 1ms
+  minimized:19 states - 1ms
+ fixed leading zeros:19 states - 1ms
+computed fibmr(i,n,(n+1)))
+computing n-1
+computed n-1
+computing fibmr(...)
+ computing &:59 states - 4 states
+ computing cross product:59 states - 4 states
+ computed cross product:37 states - 0ms
+  minimizing:37 states
+   determinizing:37 states
+   determinized:37 states - 0ms
+  minimized:22 states - 0ms
+ computed &:22 states - 0ms
+ quantifying:22 states
+  minimizing:22 states
+   determinizing:22 states
+   determinized:16 states - 0ms
+  minimized:15 states - 0ms
+ quantified:15 states - 0ms
+ fixing leading zeros:15 states
+  determinizing:15 states
+  determinized:15 states - 0ms
+  minimizing:15 states
+   determinizing:15 states
+   determinized:15 states - 0ms
+  minimized:15 states - 0ms
+ fixed leading zeros:15 states - 0ms
+computed fibmr(i,(n-1),n))
+computing ~fibmr(i,(n-1),n))
+ computing ~:15 states
+  totalizing:15 states
+  totalized:16 states - 0ms
+  minimizing:16 states
+   determinizing:16 states
+   determinized:16 states - 1ms
+  minimized:16 states - 1ms
+ computed ~:21 states - 1ms
+computed ~fibmr(i,(n-1),n))
+~fibmr(i,(n-1),n)):21 states - 1ms
+ computing fibmr(i,n,(n+1)))&~fibmr(i,(n-1),n))
+  computing &:19 states - 21 states
+  computing cross product:19 states - 21 states
+  computed cross product:21 states - 0ms
+   minimizing:21 states
+    determinizing:21 states
+    determinized:21 states - 0ms
+   minimized:12 states - 0ms
+  computed &:12 states - 0ms
+ computed fibmr(i,n,(n+1)))&~fibmr(i,(n-1),n))
+ (fibmr(i,n,(n+1)))&~fibmr(i,(n-1),n))):12 states - 0ms
+total computation time: 4ms

@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Stack;
 
 import Main.Expression;
+import Main.UtilityMethods;
 import Automata.Automaton;
 
 
@@ -39,7 +40,7 @@ public class Function extends Token {
 	public String toString(){
 		return name;
 	}
-	public void act(Stack<Expression> S) throws Exception{
+	public void act(Stack<Expression> S,boolean print,String prefix,StringBuffer log) throws Exception{
 		if(S.size() < getArity())throw new Exception("function " + name + " requires " + getArity()+ " arguments");
 		Stack<Expression> temp = new Stack<Expression>();
 		List<Expression> args = new ArrayList<Expression>();
@@ -47,6 +48,11 @@ public class Function extends Token {
 			temp.push(S.pop());
 		}
 		String stringValue = name+"(";
+		String preStep = prefix + "computing " + stringValue + "...)";  
+		log.append(preStep + UtilityMethods.newLine());
+		if(print){
+			System.out.println(preStep);
+		}
 		Automaton M = new Automaton(true);
 		List<String> identifiers = new ArrayList<String>();
 		List<String> quantify = new ArrayList<String>();
@@ -72,14 +78,14 @@ public class Function extends Token {
 					String new_identifier = currentArg.identifier+getUniqueString();
 					Automaton eq = A.NS.get(i).equality.clone();
 					eq.bind(currentArg.identifier,new_identifier);
-					M = M.and(eq);
+					M = M.and(eq,print,prefix+" ",log);
 					quantify.add(new_identifier);
 					identifiers.add(new_identifier);
 				}
 				break;
 			case arithmetic:
 				identifiers.add(currentArg.identifier);
-				M = M.and(currentArg.M);
+				M = M.and(currentArg.M,print,prefix+" ",log);
 				quantify.add(currentArg.identifier);
 				break;
 			case numberLiteral:
@@ -88,7 +94,7 @@ public class Function extends Token {
 				constant.bind(id);
 				identifiers.add(id);
 				quantify.add(id);
-				M = M.and(constant);
+				M = M.and(constant,print,prefix+" ",log);
 				break;
 			case automaton:
 				if(currentArg.M.getArity() != 1){
@@ -97,7 +103,7 @@ public class Function extends Token {
 				if(!currentArg.M.isBound()){
 					throw new Exception("argument " + (i+1) + " of function " + name + " cannot be an automaton with unlabeled input");					
 				}
-				M = M.and(currentArg.M);
+				M = M.and(currentArg.M,print,prefix+" ",log);
 				identifiers.add(currentArg.M.getLabel().get(0));
 				break;
 			default:
@@ -105,10 +111,18 @@ public class Function extends Token {
 			}	
 			
 		}
+		stringValue += ")";
+		
 		A.bind(identifiers);
-		A = A.and(M);
-		A.quantify(new HashSet<String>(quantify));
+		A = A.and(M,print,prefix+" ",log);
+		A.quantify(new HashSet<String>(quantify),print,prefix + " ",log);
+		
 		stringValue += ")";
 		S.push(new Expression(stringValue,A));
+		String postStep = prefix + "computed " + stringValue;  
+		log.append(postStep + UtilityMethods.newLine());
+		if(print){
+			System.out.println(postStep);
+		}
 	}
 }

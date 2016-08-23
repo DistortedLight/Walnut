@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Stack;
 
 import Main.Expression;
+import Main.UtilityMethods;
 import Automata.Automaton;
 
 public class Word extends Token{
@@ -37,15 +38,19 @@ public class Word extends Token{
 	public String toString(){
 		return name;
 	}
-	public void act(Stack<Expression> S) throws Exception{
+	public void act(Stack<Expression> S,boolean print,String prefix,StringBuffer log) throws Exception{
 		if(S.size() < getArity())throw new Exception("word " + name + " requires " + getArity()+ " indices");
-		
 		Stack<Expression> temp = new Stack<Expression>();
 		List<Expression> indices = new ArrayList<Expression>();
 		for(int i = 1; i <= getArity();i++){
 			temp.push(S.pop());
 		}
 		String stringValue = name;
+		String preStep = prefix + "computing " + stringValue+ "[...]";  
+		log.append(preStep + UtilityMethods.newLine());
+		if(print){
+			System.out.println(preStep);
+		}
 		List<String> identifiers = new ArrayList<String>();
 		List<String> quantify = new ArrayList<String>();
 		Automaton M = new Automaton(true);
@@ -67,14 +72,14 @@ public class Word extends Token{
 					String new_identifier = currentIndex.identifier+getUniqueString();
 					Automaton eq = W.NS.get(i).equality.clone();
 					eq.bind(currentIndex.identifier,new_identifier);
-					M = M.and(eq);
+					M = M.and(eq,print,prefix+" ",log);
 					quantify.add(new_identifier);
 					identifiers.add(new_identifier);
 				}
 				break;
 			case arithmetic:
 				identifiers.add(currentIndex.identifier);
-				M = M.and(currentIndex.M);
+				M = M.and(currentIndex.M,print,prefix+" ",log);
 				quantify.add(currentIndex.identifier);
 				break;
 			case automaton:
@@ -84,7 +89,7 @@ public class Word extends Token{
 				if(!currentIndex.M.isBound()){
 					throw new Exception("index " + (i+1) + " of word " + name + " cannot be an automaton with unlabeled input");					
 				}
-				M = M.and(currentIndex.M);
+				M = M.and(currentIndex.M,print,prefix+" ",log);
 				identifiers.add(currentIndex.M.getLabel().get(0));
 				break;
 			case numberLiteral:
@@ -93,7 +98,7 @@ public class Word extends Token{
 				constant.bind(id);
 				identifiers.add(id);
 				quantify.add(id);
-				M = M.and(constant);
+				M = M.and(constant,print,prefix+" ",log);
 				break;
 			default:
 				throw new Exception("index "+ (i+1) +" of word " + name + " cannot be of type " +currentIndex.getType());			
@@ -101,5 +106,10 @@ public class Word extends Token{
 		}
 		W.bind(identifiers);
 		S.push(new Expression(stringValue,W,M,quantify));
+		String postStep = prefix + "computed " + stringValue;  
+		log.append(postStep + UtilityMethods.newLine());
+		if(print){
+			System.out.println(postStep);
+		}
 	}
 }

@@ -38,33 +38,33 @@ import Automata.NumberSystem;
 public class prover {
 
 	static String REGEXP_FOR_THE_LIST_OF_COMMANDS = "(eval|def|reg|load|exit)";
-	static String REGEXP_FOR_EMPTY_COMMAND = "^\\s*(;|:)\\s*$";
+	static String REGEXP_FOR_EMPTY_COMMAND = "^\\s*(;|::|:)\\s*$";
 	/**
-	 * the high-level scheme of a command is a name followed by some arguments and ending in either ; or :
+	 * the high-level scheme of a command is a name followed by some arguments and ending in either ; : or ::
 	 */
-	static String REGEXP_FOR_COMMAND = "^\\s*(\\w+)(\\s+.*)?(;|:)\\s*$"; 
+	static String REGEXP_FOR_COMMAND = "^\\s*(\\w+)(\\s+.*)?(;|::|:)\\s*$"; 
 	static Pattern PATTERN_FOR_COMMAND = Pattern.compile(REGEXP_FOR_COMMAND);
 
-	static String REGEXP_FOR_exit_COMMAND = "^\\s*exit\\s*(;|:)$";
+	static String REGEXP_FOR_exit_COMMAND = "^\\s*exit\\s*(;|::|:)$";
 
-	static String REGEXP_FOR_load_COMMAND = "^\\s*load\\s+(\\w+\\.txt)\\s*(;|:)\\s*$";
+	static String REGEXP_FOR_load_COMMAND = "^\\s*load\\s+(\\w+\\.txt)\\s*(;|::|:)\\s*$";
 	/**
 	 * group for filename in REGEXP_FOR_load_COMMAND
 	 */
 	static int L_FILENAME = 1;
 	static Pattern PATTERN_FOR_load_COMMAND = Pattern.compile(REGEXP_FOR_load_COMMAND);
 
-	static String REGEXP_FOR_eval_def_COMMANDS = "^\\s*(eval|def)\\s+([a-zA-Z]\\w*)\\s+\"(.*)\"\\s*((<\\s*\\w+(\\s+\\w+)*\\s*>\\s*)*)(;|:)\\s*$";
+	static String REGEXP_FOR_eval_def_COMMANDS = "^\\s*(eval|def)\\s+([a-zA-Z]\\w*)((\\s+([a-zA-Z]\\w*))*)\\s+\"(.*)\"\\s*(;|::|:)\\s*$";
 	/**
 	 * important groups in REGEXP_FOR_eval_def_COMMANDS
 	 */
-	static int ED_TYPE = 1, ED_NAME = 2, ED_PREDICATE = 3, ED_MATRICES = 4,ED_ISENUMERABLE = 5,ED_ENDING = 7; 
+	static int ED_TYPE = 1, ED_NAME = 2, ED_FREE_VARIABLES = 3 ,ED_PREDICATE = 6, ED_ENDING = 7; 
 	static Pattern PATTERN_FOR_eval_def_COMMANDS = Pattern.compile(REGEXP_FOR_eval_def_COMMANDS);
-	static String REXEXP_FOR_A_SINGLE_ANGULAR_BRACKET_IN_eval_def_COMMANDS = "<\\s*\\w+(\\s+\\w+)*\\s*>";
-	static Pattern PATTERN_FOR_A_SINGLE_ANGULAR_BRACKET_IN_eval_def_COMMANDS = Pattern.compile(REXEXP_FOR_A_SINGLE_ANGULAR_BRACKET_IN_eval_def_COMMANDS);
+	static String REXEXP_FOR_A_FREE_VARIABLE_IN_eval_def_COMMANDS = "[a-zA-Z]\\w*";
+	static Pattern PATTERN_FOR_A_FREE_VARIABLE_IN_eval_def_COMMANDS = Pattern.compile(REXEXP_FOR_A_FREE_VARIABLE_IN_eval_def_COMMANDS);
 	
 	
-	static String REGEXP_FOR_reg_COMMAND = "^\\s*(reg)\\s+([a-zA-Z]\\w*)\\s+((((msd|lsd)_(\\d+|\\w+))|((msd|lsd)(\\d+|\\w+))|(msd|lsd)|(\\d+|\\w+))|(\\{(\\s*(\\+|\\-)?\\s*\\d+)(\\s*,\\s*(\\+|\\-)?\\s*\\d+)*\\s*\\}))\\s+\"(.*)\"\\s*(;|:)\\s*$";
+	static String REGEXP_FOR_reg_COMMAND = "^\\s*(reg)\\s+([a-zA-Z]\\w*)\\s+((((msd|lsd)_(\\d+|\\w+))|((msd|lsd)(\\d+|\\w+))|(msd|lsd)|(\\d+|\\w+))|(\\{(\\s*(\\+|\\-)?\\s*\\d+)(\\s*,\\s*(\\+|\\-)?\\s*\\d+)*\\s*\\}))\\s+\"(.*)\"\\s*(;|::|:)\\s*$";
 	/**
 	 * important groups in REGEXP_FOR_reg_COMMAND
 	 */
@@ -75,8 +75,6 @@ public class prover {
 	
 	static Pattern PATTERN_FOR_A_SINGLE_NOT_SPACED_WORD = Pattern.compile("\\w+");
 
-	
-	
 	/**
 	 * if the command line argument is not empty, we treat args[0] as a filename. 
 	 * if this is the case, we read from the file and load its commands before we submit control to user.
@@ -88,8 +86,11 @@ public class prover {
 	 */	
 	public static void main(String[] args) throws Exception {
 		UtilityMethods.setPaths();
-		//IntegrationTest IT = new IntegrationTest();
+		//IntegrationTest IT = new IntegrationTest(false);
+		//IT.runPerformanceTest("Walnut with Valmari without refactoring", 5);
+		//IT.runPerformanceTest("Walnut with dk.bricks", 5);
 		//IT.runTestCases();
+		//IT.createTestCases();
 		run(args);
 	}
 	public static void run(String[] args){
@@ -97,7 +98,7 @@ public class prover {
 		if(args.length >= 1){
 			//reading commands from the file with address args[0]
 			try{
-				in = new BufferedReader(new InputStreamReader(new FileInputStream(UtilityMethods.get_address_for_command_files()+args[0]), "utf-16"));
+				in = new BufferedReader(new InputStreamReader(new FileInputStream(UtilityMethods.get_address_for_command_files()+args[0]), "utf-8"));
 				if(!readBuffer(in,false))return;
 			}
 			catch (IOException e) {
@@ -136,6 +137,7 @@ public class prover {
 		    	else if(index1 != -1) index = index1;
 		    	else index = index2;
 		    	
+		    	if((s.length()-1) > index && s.charAt(index+1)==':')index++;
 		    	if(index != -1){
 		    		s = s.substring(0,index+1);
 		    		buffer.append(s);
@@ -185,7 +187,7 @@ public class prover {
 		else throw new Exception("no such command exists");
 		return true;
 	}
-	public static Automaton dispatchForIntegrationTest(String s) throws Exception{
+	public static TestCase dispatchForIntegrationTest(String s) throws Exception{
 		if(s.matches(REGEXP_FOR_EMPTY_COMMAND)){//if the command is just ; or : do nothing
 			return null;
 		}    		
@@ -225,7 +227,7 @@ public class prover {
 		BufferedReader in = null;
 		 
 		try {	 
-			in = new BufferedReader(new InputStreamReader(new FileInputStream(UtilityMethods.get_address_for_command_files()+m.group(L_FILENAME)), "utf-16"));
+			in = new BufferedReader(new InputStreamReader(new FileInputStream(UtilityMethods.get_address_for_command_files()+m.group(L_FILENAME)), "utf-8"));
 			if(!readBuffer(in,false))return false;
  
 		} catch (IOException e) {
@@ -235,28 +237,32 @@ public class prover {
 		}
 		return true;
 	}
-	public static Automaton eval_def_commands(String s) throws Exception{
+	public static TestCase eval_def_commands(String s) throws Exception{
 		Automaton M = null;
-		
+
 		Matcher m = PATTERN_FOR_eval_def_COMMANDS.matcher(s);
 		if(!m.find())throw new Exception("invalid use of eval/def command");
-		List<List<String>> matrix_requests = new ArrayList<List<String>>();
-		if(m.group(ED_ISENUMERABLE)!= null)
-			which_matrices_to_compute(m.group(ED_MATRICES),matrix_requests);
+		List<String> free_variables = new ArrayList<String>();
+		if(m.group(ED_FREE_VARIABLES)!= null)
+			which_matrices_to_compute(m.group(ED_FREE_VARIABLES),free_variables);
 		boolean printSteps = m.group(ED_ENDING).equals(":");
-
-		Computer c = new Computer(m.group(ED_PREDICATE), matrix_requests, printSteps);
+		boolean printDetails = m.group(ED_ENDING).equals("::");
+			
+		Computer c = new Computer(m.group(ED_PREDICATE), printSteps, printDetails);
 		c.write(UtilityMethods.get_address_for_result()+m.group(ED_NAME)+".txt");	
 		c.drawAutomaton(UtilityMethods.get_address_for_result()+m.group(ED_NAME)+".gv");
-		c.writeMatrices(UtilityMethods.get_address_for_result()+m.group(ED_NAME)+".mpl");
+		if(free_variables.size() > 0){
+			c.writeMatrices(UtilityMethods.get_address_for_result()+m.group(ED_NAME)+".mpl",free_variables);
+		}
 		c.writeLog(UtilityMethods.get_address_for_result()+m.group(ED_NAME)+"_log.txt");
+		if(printDetails)
+			c.writeDetailedLog(UtilityMethods.get_address_for_result()+m.group(ED_NAME)+"_detailed_log.txt");
 		if(m.group(ED_TYPE).equals("def"))
 			c.write(UtilityMethods.get_address_for_automata_library()+m.group(ED_NAME)+".txt");	
 		M = c.getTheFinalResult();
-		
-		return M;
+		return new TestCase(s, M, "", c.mpl, printDetails ? c.log_details.toString() : "");
 	}
-	public static Automaton regCommand(String s) throws Exception{
+	public static TestCase regCommand(String s) throws Exception{
 		Matcher m = PATTERN_FOR_reg_COMMAND.matcher(s);
 		if(!m.find())throw new Exception("invalid use of reg command");
 		NumberSystem ns = null;
@@ -284,19 +290,14 @@ public class prover {
 		R.draw(UtilityMethods.get_address_for_result()+m.group(R_NAME)+".gv",m.group(R_REGEXP));
 		R.write(UtilityMethods.get_address_for_result()+m.group(R_NAME)+".txt");		
 		R.write(UtilityMethods.get_address_for_automata_library()+m.group(R_NAME)+".txt");
-		return R;
+	
+		return new TestCase(s,R,"","","");
 	}
-	private static void which_matrices_to_compute(String s,List<List<String>> L){
-		Matcher m1 = PATTERN_FOR_A_SINGLE_ANGULAR_BRACKET_IN_eval_def_COMMANDS.matcher(s);	
+	private static void which_matrices_to_compute(String s, List<String> L){
+		Matcher m1 = PATTERN_FOR_A_FREE_VARIABLE_IN_eval_def_COMMANDS.matcher(s);	
 		while (m1.find()) {
 		    String t = m1.group();
-		    t = t.substring(1,t.length()-1); // truncate < and > from beginning and end
-		    Matcher m2 = PATTERN_FOR_A_SINGLE_NOT_SPACED_WORD.matcher(t);
-		    List<String> K = new ArrayList<String>();
-		    while(m2.find()){
-		    	K.add(m2.group());
-		    }
-		    L.add(K);
+		    L.add(t);
 		} 
 	}
 	private static List<Integer> what_is_the_alphabet(String s){

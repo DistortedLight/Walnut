@@ -22,19 +22,80 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import Automata.Automaton;
 
 public class IntegrationTest {
 	String directoryAddress = "Test Results/Integreation Tests/"; 
+	String performanceTestFileName = "performance_test.txt";
 	List<TestCase> testCases;//list of test cases
 	List<String> L;//list of commands
+	private void initialize(){
+		try {
+			PrintWriter out = new PrintWriter("Word Automata Library/T2.txt", "utf-8");
+			out.write("msd_2 msd_2\n0 1\n0 0 -> 0\n1 0 -> 1\n0 1 -> 1\n1 1 -> 0\n1 0\n0 0 -> 1\n1 0 -> 0\n0 1 -> 0\n1 1 -> 1\n");
+			out.close();
+			out = new PrintWriter("Word Automata Library/RS.txt", "utf-8");
+			out.write("msd_2\n0 0\n0 -> 0\n1 -> 1\n1 0\n0 -> 0\n1 -> 2\n2 1\n0 -> 3\n1 -> 1\n3 1\n0 -> 3\n1 -> 2\n");
+			out.close();
+			out = new PrintWriter("Word Automata Library/P.txt", "utf-8");
+			out.write("msd_2\n0 0\n0 -> 0\n1 -> 1\n1 0\n0 -> 0\n1 -> 2\n2 1\n0 -> 3\n1 -> 2\n3 1\n0 -> 3\n1 -> 1\n");
+			out.close();
+			out = new PrintWriter("Word Automata Library/PR.txt", "utf-8");
+			out.write("lsd_2\n0 0\n0 -> 1\n1 -> 0\n1 0\n0 -> 2\n1 -> 3\n2 0\n0 -> 2\n1 -> 2\n3 1\n0 -> 3\n1 -> 3\n");
+			out.close();
+			out = new PrintWriter("Word Automata Library/PD.txt", "utf-8");
+			out.write("msd_2\n0 1\n0 -> 0\n1 -> 1\n1 0\n0 -> 0\n1 -> 0\n");
+			out.close();
+
+			prover.dispatch("reg endsIn2Zeros lsd_2 \"(0|1)*00\";");
+			prover.dispatch("reg startsWith2Zeros msd_2 \"00(0|1)*\";");
+			prover.dispatchForIntegrationTest("def thueeq \"T[x]=T[y]\";");
+			prover.dispatchForIntegrationTest("def func \"(?msd_3 c < 5) & (a = b+1) & (?msd_10 e = 17)\";");
+			prover.dispatchForIntegrationTest("def thuefactoreq \"Ak (k < n) => T[i+k] = T[j+k]\";");
+			prover.dispatchForIntegrationTest("def thueuniquepref \"Aj (j > 0 & j < n-m) => ~$thuefactoreq(i,i+j,m)\";");
+			prover.dispatchForIntegrationTest("def thueuniquesuff \"Aj (j > 0 & j < n-m) => ~$thuefactoreq(i+n-m,i+n-m-j,m)\";");
+			prover.dispatchForIntegrationTest("def thuepriv \"(n >= 1) & Am (m <= n & m >= 1) => (Ep (p <= m & p >= 1) & $thueuniquepref(i,p,m) & $thueuniquesuff(i+n-m,p,m) & $thuefactoreq(i, i+n-p, p))\";");
+			prover.dispatchForIntegrationTest("def fibmr \"?msd_fib (i<=j)&(j<n)&Ep ((p>=1)&(2*p+i<=j+1)&(Ak (k+i+p<=j) => (F[i+k]=F[i+k+p]))&((i>=1) => (Aq ((1<=q)&(q<=p)) =>"
+											+ "(El (l+i+q<=j+1)&(F[i+l-1]!=F[i+l+q-1]))))&((j+2<=n) => (Ar ((1<=r)&(r<=p)) =>"
+											+ "(Em (m+r+i<=j+1)&(F[i+m]!=F[i+m+r])))))\";");
+			
+			prover.dispatchForIntegrationTest("load thue_tests.txt;");
+			prover.dispatchForIntegrationTest("load rudin_shapiro_tests.txt;");
+			prover.dispatchForIntegrationTest("load rudin_shapiro_trapezoidal_tests.txt;");
+			prover.dispatchForIntegrationTest("load paperfolding_tests.txt;");
+			prover.dispatchForIntegrationTest("load paperfolding_trapezoidal_tests.txt;");
+			prover.dispatchForIntegrationTest("load period_doubling_tests.txt;");
+			prover.dispatchForIntegrationTest("load fibonacci_tests.txt;");
+
+			
+		} catch (FileNotFoundException e2) {
+			e2.printStackTrace();
+		} catch (UnsupportedEncodingException e2) {
+			e2.printStackTrace();
+		} catch(Exception e){
+			e.printStackTrace();
+		}
+	}
 	public IntegrationTest(){
+		this(false);
+	}
+	public IntegrationTest(boolean should_initialize){
+		if(should_initialize){
+			initialize();
+		}
 		testCases = new ArrayList<TestCase>();
 		L = new ArrayList<String>();
 		L.add("eval test0 \"(a = 4) & (b)=(5) & (6) = c & (17 = d)\";");
@@ -199,7 +260,7 @@ public class IntegrationTest {
 		L.add("reg test139 {0,1} \"100*\";");
 		L.add("reg     test140   msd_2 \"100*\";");
 		L.add("reg test141 {  0  ,   1   ,   2  }  \"100*\";");
-		L.add("reg test142 {  0  ,   1   ,   - 2  ,+4,        5   }  \"100*\";");
+		L.add("reg test142 {  0  ,   1   ,   - 2  ,+4,        5   }  \"100*\";"); //error: the input alphabet of an automaton generated from a regular expression must be a subset of {0,1,...,9}
 		L.add("reg test143 {  0  ,   1   ,   +  2  ,+4,      +  5   }  \"100*\";");
 		L.add("reg test144      msd_fib  \"100*\";");
 		L.add("reg test145      lsd_10     \"100*\";");
@@ -214,7 +275,7 @@ public class IntegrationTest {
 		L.add("reg test154 msd_5 \".[5-9]*[8-9].\";");
 		L.add("reg test155 msd_5 \".[4-9]+.\";");
 		
-		L.add("reg test156 \"T[a]=1\";");
+		L.add("reg test156 \"T[a]=1\";"); //error: invalid use of reg command
 		L.add("eval test157 \"T[a] = T[2*a]\";");
 		L.add("eval test158 \"T[a] <= @2\";");
 		L.add("eval test159 \"T[a] = T[2*a+1]\";");
@@ -236,14 +297,6 @@ public class IntegrationTest {
 		L.add("eval test175 \"?msd_fib En n > 0 & Ak k<n => F[i+k]=F[i+k+n]\";");
 		L.add("eval test176 \"?msd_fib n > 0 & Ak k <n=>F[i+k]=F[i+k+n]\";");
 		L.add("eval test177 \"?msd_fib n>0 & Ei Ak k < n => R[i+k]=R[i+k+n]\";");
-		try{
-			prover.dispatch("reg endsIn2Zeros lsd_2 \"(0|1)*00\";");
-			prover.dispatch("reg startsWith2Zeros msd_2 \"00(0|1)*\";");
-			prover.dispatchForIntegrationTest("def func \"(?msd_3 c < 5) & (a = b+1) & (?msd_10 e = 17)\";");
-		}
-		catch(Exception e){
-			e.printStackTrace();
-		}
 		L.add("eval test178 \"?lsd_2 n > 0 & Ef,i i >= 1 & $endsIn2Zeros(i) & $endsIn2Zeros(n) & (Ak k < n => PF[f][i+k] = PF[f][i+k+n])\";");
 		L.add("eval test179 \"n > 0 & Ef,i i >= 1 & $startsWith2Zeros(i) & $startsWith2Zeros(n) & (Ak k < n => PFmsd[f][i+k] = PFmsd[f][i+k+n])\";");//squares
 		L.add("eval test180 \"?lsd_2 n > 0 & Ef,i i >= 1 & $endsIn2Zeros(i) & $endsIn2Zeros(n) & (Ak k < 2*n => PF[f][i+k] = PF[f][i+k+n])\";");//cubes
@@ -257,123 +310,423 @@ public class IntegrationTest {
 		L.add("eval test187 \"Ez,x,y $func(z,x,y,?msd_10 w=10)\";");
 		L.add("eval test188 \"Ez,x,y $func(z,x,y,?msd_10 w=17)\";");
 		L.add("eval test189 \"Ez,x,y $func(z,x,y,?msd_10 17)\";");
-		L.add("eval test190 \"Ez,x,y $func(z,x,y,17)\";");
+		L.add("eval test190 \"Ez,x,y $func(z,x,y,17)\";"); // error: in computing cross product of two automaton, variables with the same label must have the same alphabet: char at 8
 		L.add("eval test191 \"Ez,x,y $func(z,x,y,?msd_10 Eb (a = b+1))\";");
 		L.add("eval test192 \"Ez,x,y $func(z,x,y,`(?lsd_10 Eb a = b+1))\";");
 		L.add("eval test193 \"Ez,w,x $func(z,x,?msd_3 y+2,w)\";");
 		L.add("eval test194 \"Ez,w,x $func(z,x,?msd_3 y-1,w)\";");
 		L.add("eval test195 \"Ez,x,y $func(z,x,y,?msd_10 a+1)\";");
 		
-		try{
-			prover.dispatchForIntegrationTest("def thueeq \"T[x]=T[y]\";");
-		}
-		catch(Exception e){
-			e.printStackTrace();
-		}
 		L.add("eval test196 \"$thueeq(x,y)\";");
 		L.add("eval test197 \"$thueeq(x,x)\";");
 		L.add("eval test198 \"Ax $thueeq(x,x)\";");
 		L.add("eval test199 \"Ex $thueeq(x,x)\";");
 		L.add("eval test200 \"Ax,y x=y=>$thueeq(x,y)\";");
 		L.add("eval test201 \"(Ax,y x=y=>$thueeq(x,y)) <=> Ax $thueeq(x,x)\";");
-		
-		try {
-			PrintWriter out = new PrintWriter("Word Automata Library/T2.txt", "UTF-16");
-			out.write("msd_2 msd_2\n0 1\n0 0 -> 0\n1 0 -> 1\n0 1 -> 1\n1 1 -> 0\n1 0\n0 0 -> 1\n1 0 -> 0\n0 1 -> 0\n1 1 -> 1\n");
-			out.close();
-		} catch (FileNotFoundException e2) {
-			e2.printStackTrace();
-		} catch (UnsupportedEncodingException e2) {
-			e2.printStackTrace();
-		}
-		
 		L.add("eval test202 \"T2[x][x]=@1\";");
 		L.add("eval test203 \"T2[x][x+1]=@0\";");
 		L.add("eval test204 \"Ax T2[x][x]=@1\";");
+		L.add("eval test205 \"?msd_17 a=17\";");
+		L.add("eval test206 \"?lsd_17 a=17\";");
+		L.add("eval test207 \"?msd_17 a=37\";");
+		L.add("eval test208 \"?msd_17 a=b\";");
+		L.add("eval test209 \"?msd_17 a=b+1\";");
+		
+		L.add("eval test210 \"Ej Ai ((i<n) => T[j+i] = T[j+n+i])\";");
+		L.add("eval test211 \"Ei Aj (j < n) => (T[i+j] = T[i+n-1-j])\";");
+		L.add("eval test212 \"Ej Ai ((i<=n) => T[j+i] = T[j+n+i])\";");
+		L.add("eval test213 \"?msd_fib Ei Ak (k < 2*n) => F[i+k]=F[i+n+k]\";");
+		L.add("eval test214 \"En Ei (n >= 1) & (Aj (j>= i) => T[j] = T[n+j])\";");
+		L.add("eval test215 \"Ej (At (t<n) => (T[i+t] = T[j+n-1-t]))\";");
+		L.add("eval test216 \"Ai Ej (At (t<n) => (T[i+t] = T[j+n-1-t]))\";");
+		L.add("eval test217 \"An Ai Ej (At (t<n) => (T[i+t] = T[j+n-1-t]))\";");
+		L.add("eval test218 \"Ek ((k>i) & (At ((t<n) => (T[i+t] = T[k+t]))))\";");
+		L.add("eval test219 \"Ai Ek ((k>i) & (At ((t<n) => (T[i+t] = T[k+t]))))\";");
+		L.add("eval test220 \"An Ai Ek ((k>i) & (At ((t<n) => (T[i+t] = T[k+t]))))\";");
+		L.add("eval test221 \"Es (s>i)&(s<=i+l)&(Aj (j<n) => (T[i+j]=T[s+j]))\";");
+		L.add("eval test222 \"Ai Es (s>i)&(s<=i+l)&(Aj (j<n) => (T[i+j]=T[s+j]))\";");
+		L.add("eval test223 \"El Ai Es (s>i)&(s<=i+l)&(Aj (j<n) => (T[i+j]=T[s+j]))\";");
+		L.add("eval test224 \"An El Ai Es (s>i)&(s<=i+l)&(Aj (j<n) => (T[i+j]=T[s+j]))\";");
+		L.add("eval test225 \"Ei ( Aj (((j>=1)&((2*j)<=n)) => (Et (t < j) & (T[i+t] != T[i+n-j+t]))))\";");
+		L.add("eval test226 \"El As Ar ((l<=r)&(r<=s)&(s<=l+n-1)) => (( (Ai (i+r<=s) => T[r+i]=T[s-i]) & (Au ((l<=u)&(u<r)) => (Ej (j+u<=s) & T[u+j] != T[s-j]))) => (Ah ((l<=h)&(h<r)) => (Ek (k+r<=s) & T[h+k] != T[r+k])))\";");
+		L.add("eval test227 \"?msd_fib An Ej (j<=n)&(j<n+p)&(Ak (k<p) => F[k] = F[k+p])\";");
+		L.add("eval test228 \"Ei (Aj (j<n) => (T[i+j] != T[i+j+n]))\";");
+		L.add("eval test229 \"Ei Ej (Ak (k<n) => (T[i+k] = RS[j+k]))\";");
+		L.add("eval test230 \"Ei At ((t<n) => ((T[i+t]=T[i+t+n]) & (T[i+t]=T[i+3*n-1-t])))\";");
+		L.add("eval test231 \"?msd_fib Ei Ej (j=i+2*n) & (At (t<n) =>(R[i+t]=R[i+t+n])) & (At (t<n) => (R[j+t]=R[j-1-t]))\";");
+		L.add("eval test232 \"Ei $thuepriv(i,n)\";");
+		
+		L.add("eval test233 \"(m<=n) & (Ek (k+m<=n) & $thue_factoreq(i,j+k,m))\";");
+		L.add("eval test234 \"$thue_in(m,1,n) & $thue_factoreq(i,i+n-m,m)\";");
+		L.add("eval test235 \"Am $thue_in(m,1,n) => (Ej $thue_subs(j,i,1,m) & $thue_pal(j,i+m-j) & ~$thue_occurs(j,i,i+m-j,m-1))\";");
+		L.add("eval test236 \"$thue_priv(i,n) & (Aj (j<i) => ~$thue_factoreq(i,j,n))\";");
+		L.add("eval test237 \"$thue_priv(i,n) & $thue_pal(i,n)\";");
+		L.add("eval test238 \"$thue_privpal(i,n) & (Aj (j<i) => ~$thue_factoreq(i,j,n))\";");
+		L.add("eval test239 \"(n<=1) | (Ej (j<n)& $thue_border(i,j,n) & ~$thue_occurs(i,i+1,j,n-2))\";");
+		L.add("eval test240 \"$thue_closed(i,n) & ~$thue_occurs(i,0,n,i+n-1)\";");
+		L.add("eval test241 \"Ei $thue_closed(i,n)\";");
+		L.add("eval test242 \"$thue_pal(i,n) & (Aj ((j>=1)&$thue_factoreq(i,j,n)) => (T[j-1] != T[j+n]))\";");
+		L.add("eval test243 \"$thue_subs(i,j,m,n-1) & (Er $thue_subs(r,j,m,n-1) & $thue_factoreq(i,r,m) & T[r+m]=@0) & (Es $thue_subs(s,j,m,n-1) & $thue_factoreq(i,s,m) & T[s+m] = @1)\";");
+		L.add("eval test244 \"Ei $thue_rtspec(i,j,p,n)\";");
+		L.add("eval test245 \"Er Es ($thue_subs(r,j,p+1,n) & $thue_subs(s,j,p+1,n) & $thue_factoreq(r,s,p) & T[s+p] != T[r+p])\";");
+		L.add("eval test246 \"~$thue_rt(j,n,p) & (Ac (~$thue_rt(j,n,c)) => c >=p)\";");
+		L.add("eval test247 \"~$thue_rt2(j,n,p) & (Ac (~$thue_rt2(j,n,c)) => c >=p)\";");
+		L.add("eval test248 \"~$thue_occurs(j+n-q,j,q,n-1)\";");
+		L.add("eval test249 \"$thue_unrepsuf(j,n,q) & (Ac $thue_unrepsuf(j,n,c) => (c >= q))\";");
+		L.add("eval test250 \"(n<=1) | (Ep Eq (n=p+q) & $thue_minunrepsuf(j,n,p) & $thue_minrt(j,n,q))\";");
+		L.add("eval test251 \"(n<=1) | (Ep Eq (n=p+q) & $thue_minunrepsuf(j,n,p) & $thue_minrt2(j,n,q))\";");
+		L.add("eval test252 \"Em (m+2 <= n) & Ej Ek ($thue_subs(j,i+1,m,n-2) & $thue_subs(k,i+1,m,n-2) & $thue_pal(j,m) & $thue_factoreq(j,k,m) & (T[j-1]=T[j+m]) & (T[k-1]=T[k+m]) & (T[j-1] != T[k-1]))\";");
+		L.add("eval test253 \"Em (m >= 2) & (Ej Ek ($thue_subs(j,i,m,n) & $thue_subs(k,i,m,n) & $thue_pal(j,m) & $thue_pal(k,m) & $thue_factoreq(j+1,k+1,m-2) & T[j]!=T[k]))\";");	
+		L.add("eval test254 \"Ei $thue_rich(i,n)\";");
+		L.add("eval test255 \"Ei $thue_priv(i,n)\";");
+		L.add("eval test256 \"Ei $thue_maxpal(i,n)\";");
+		L.add("eval test257 \"Ej $thue_trap(j,n)\";");
+		L.add("eval test258 \"Ej ~$thue_unbal(j,n)\";");
+		
+		L.add("eval test259 \"Ak (k<n) => RS[i+k]=RS[j+k]\";");
+		L.add("eval test260 \"Ak (k<n) => RS[i+k] = RS[i+n-1-k]\";");
+		L.add("eval test261 \"(m<=n) & (Ek (k+m<=n) & $rudin_factoreq(i,j+k,m))\";");
+		L.add("eval test262 \"$rudin_in(m,1,n) & $rudin_factoreq(i,i+n-m,m)\";");
+		L.add("eval test263 \"Am $rudin_in(m,1,n) => (Ej $rudin_subs(j,i,1,m) & $rudin_pal(j,i+m-j) & ~$rudin_occurs(j,i,i+m-j,m-1))\";");
+		L.add("eval test264 \"Ei $rudin_rich(i,n)\";");
+		L.add("eval test265 \"Aj $rudin_in(j,1,n-m-1) => ~$rudin_factoreq(i,i+j,m)\";");
+		L.add("eval test266 \"Aj $rudin_in(j,1,n-m-1) => ~$rudin_factoreq(i+n-m,i+n-m-j,m)\";");
+		L.add("eval test267 \"(n<=1) | (Am $rudin_in(m,1,n) => (Ep $rudin_in(p,1,m) & ($rudin_border(i,p,n) & $rudin_uniqpref(i,p,m) & $rudin_uniqsuff(i+n-m,p,m))))\";");
+		L.add("eval test268 \"Ei $rudin_priv(i,n)\";");
+		L.add("eval test269 \"(n<=1) | (Ej (j<n)& $rudin_border(i,j,n) & ~$rudin_occurs(i,i+1,j,n-2))\";");
+		L.add("eval test270 \"$rudin_closed(i,n) & ~$rudin_occurs(i,0,n,i+n-1)\";");
+		L.add("eval test271 \"Ei $rudin_closed(i,n)\";");
+		L.add("eval test272 \"$rudin_pal(i,n) & (Aj ((j>=1)&$rudin_factoreq(i,j,n)) => (RS[j-1] != RS[j+n]))\";");
+		L.add("eval test273 \"Ei $rudin_maxpal(i,n)\";");
+		L.add("eval test274 \"Er Es ($rudin_subs(r,j,p+1,n) & $rudin_subs(s,j,p+1,n) & $rudin_factoreq(r,s,p) & RS[s+p] != RS[r+p])\";");
+		L.add("eval test275 \"~$rudin_rt2(j,n,p) & (Ac (~$rudin_rt2(j,n,c)) => c >=p)\";");
+		L.add("eval test276 \"~$rudin_occurs(j+n-q,j,q,n-1)\";");
+		L.add("eval test277 \"$rudin_unrepsuf(j,n,q) & (Ac $rudin_unrepsuf(j,n,c) => (c >= q))\";");
+		L.add("eval test278 \"(n<=1) | (Ep Eq (n=p+q) & $rudin_minunrepsuf(j,n,p) & $rudin_minrt2(j,n,q))\";");
+		L.add("eval test279 \"Ej $rudin_trap2(j,n)\";");
+		L.add("eval test280 \"Em (m+2 <= n) & Ej Ek ($rudin_subs(j,i+1,m,n-2) & $rudin_subs(k,i+1,m,n-2) & $rudin_pal(j,m) & $rudin_factoreq(j,k,m) & (RS[j-1]=RS[j+m]) & (RS[k-1]=RS[k+m]) & (RS[j-1] != RS[k-1]))\";");
+		L.add("eval test281 \"Em (m >= 2) & (Ej Ek ($rudin_subs(j,i,m,n) & $rudin_subs(k,i,m,n) & $rudin_pal(j,m) & $rudin_pal(k,m) & $rudin_factoreq(j+1,k+1,m-2) & RS[j]!=RS[k]))\";");
+		L.add("eval test282 \"Ej ~$rudin_unbal(j,n)\";");
+		
+		L.add("eval test283 \"?lsd_2 (j<=i) & (i+m<=j+n)\";");
+		L.add("eval test284 \"?lsd_2 Ak (k<n) => RS[i+k]=RS[j+k]\";");
+		L.add("eval test285 \"?lsd_2 Ak (k<n) => RS[i+k] = RS[i+n-1-k]\";");
+		L.add("eval test286 \"?lsd_2 (m<=n) & (Ek (k+m<=n) & $rudin_trapezoid_factoreq(i,j+k,m))\";");
+		L.add("eval test287 \"?lsd_2 Er Es ($rudin_trapezoid_subs(r,j,p+1,n) & $rudin_trapezoid_subs(s,j,p+1,n) & $rudin_trapezoid_factoreq(r,s,p) & RS[s+p] != RS[r+p])\";");
+		L.add("eval test288 \"?lsd_2 ~$rudin_trapezoid_rt2(j,n,p) & (Ac (~$rudin_trapezoid_rt2(j,n,c)) => c >=p)\";");
+		L.add("eval test289 \"?lsd_2 ~$rudin_trapezoid_occurs(j+n-q,j,q,n-1)\";");
+		L.add("eval test290 \"?lsd_2 $rudin_trapezoid_unrepsuf(j,n,q) & (Ac $rudin_trapezoid_unrepsuf(j,n,c) => (c >= q))\";");
+		L.add("eval test291 \"?lsd_2 (n<=1) | (Ep Eq (n=p+q) & $rudin_trapezoid_minunrepsuf(j,n,p) & $rudin_trapezoid_minrt2(j,n,q))\";");
+		L.add("eval test292 \"?lsd_2 Ej $rudin_trapezoid_trap2(j,n)\";");
+		
+		L.add("eval test293 \"Ak (k<n) => P[i+k]=P[j+k]\";");
+		L.add("eval test294 \"Ak (k<n) => P[i+k] = P[i+n-1-k]\";");
+		L.add("eval test295 \"(m<=n) & (Ek (k+m<=n) & $paperfolding_factoreq(i,j+k,m))\";");
+		L.add("eval test296 \"$paperfolding_in(m,1,n) & $paperfolding_factoreq(i,i+n-m,m)\";");
+		L.add("eval test297 \"Am $paperfolding_in(m,1,n) => (Ej $paperfolding_subs(j,i,1,m) & $paperfolding_pal(j,i+m-j) & ~$paperfolding_occurs(j,i,i+m-j,m-1))\";");
+		L.add("eval test298 \"Ei $paperfolding_rich(i,n)\";");
+		L.add("eval test299 \"Aj $paperfolding_in(j,1,n-m-1) => ~$paperfolding_factoreq(i,i+j,m)\";");
+		L.add("eval test300 \"Aj $paperfolding_in(j,1,n-m-1) => ~$paperfolding_factoreq(i+n-m,i+n-m-j,m)\";");
+		L.add("eval test301 \"(n<=1) | (Am $paperfolding_in(m,1,n) => (Ep $paperfolding_in(p,1,m) & ($paperfolding_border(i,p,n) & $paperfolding_uniqpref(i,p,m) & $paperfolding_uniqsuff(i+n-m,p,m))))\";");
+		L.add("eval test302 \"Ei $paperfolding_priv(i,n)\";");
+		L.add("eval test303 \"(n<=1) | (Ej (j<n)& $paperfolding_border(i,j,n) & ~$paperfolding_occurs(i,i+1,j,n-2))\";");
+		L.add("eval test304 \"$paperfolding_closed(i,n) & ~$paperfolding_occurs(i,0,n,i+n-1)\";");
+		L.add("eval test305 \"Ei $paperfolding_closed(i,n)\";");
+		L.add("eval test306 \"$paperfolding_pal(i,n) & (Aj ((j>=1)&$paperfolding_factoreq(i,j,n)) => (P[j-1] != P[j+n]))\";");
+		L.add("eval test307 \"Ei $paperfolding_maxpal(i,n)\";");
+		L.add("eval test308 \"Em (m+2 <= n) & Ej Ek ($paperfolding_subs(j,i+1,m,n-2) & $paperfolding_subs(k,i+1,m,n-2) & $paperfolding_pal(j,m) & $paperfolding_factoreq(j,k,m) & (P[j-1]=P[j+m]) & (P[k-1]=P[k+m]) & (P[j-1] != P[k-1]))\";");
+		L.add("eval test310 \"Ej ~$paperfolding_unbal(j,n)\";");
+		
+		L.add("eval test311 \"?lsd_2 (j<=i) & (i+m<=j+n)\";");
+		L.add("eval test312 \"?lsd_2 Ak (k<n) => PR[i+k]=PR[j+k]\";");
+		L.add("eval test313 \"?lsd_2 Ak (k<n) => PR[i+k] = PR[i+n-1-k]\";");
+		L.add("eval test314 \"?lsd_2 (m<=n) & (Ek (k+m<=n) & $paperfolding_trapezoidal_factoreq(i,j+k,m))\";");
+		L.add("eval test315 \"?lsd_2 Er Es ($paperfolding_trapezoidal_subs(r,j,p+1,n) & $paperfolding_trapezoidal_subs(s,j,p+1,n) & $paperfolding_trapezoidal_factoreq(r,s,p) & PR[s+p] != PR[r+p])\";");
+		L.add("eval test316 \"?lsd_2 ~$paperfolding_trapezoidal_rt2(j,n,p) & (Ac (~$paperfolding_trapezoidal_rt2(j,n,c)) => c >=p)\";");
+		L.add("eval test317 \"?lsd_2 ~$paperfolding_trapezoidal_occurs(j+n-q,j,q,n-1)\";");
+		L.add("eval test318 \"?lsd_2 $paperfolding_trapezoidal_unrepsuf(j,n,q) & (Ac $paperfolding_trapezoidal_unrepsuf(j,n,c) => (c >= q))\";");
+		L.add("eval test319 \"?lsd_2 (n<=1) | (Ep Eq (n=p+q) & $paperfolding_trapezoidal_minunrepsuf(j,n,p) & $paperfolding_trapezoidal_minrt2(j,n,q))\";");
+		L.add("eval test320 \"?lsd_2 Ej $paperfolding_trapezoidal_trap2(j,n)\";");
+		
+		L.add("eval test320 \"Ak (k<n) => PD[i+k]=PD[j+k]\";");
+		L.add("eval test321 \"Ak (k<n) => PD[i+k] = PD[i+n-1-k]\";");
+		L.add("eval test322 \"(m<=n) & (Ek (k+m<=n) & $period_doubling_factoreq(i,j+k,m))\";");
+		L.add("eval test323 \"$period_doubling_in(m,1,n) & $period_doubling_factoreq(i,i+n-m,m)\";");
+		L.add("eval test324 \"Am $period_doubling_in(m,1,n) => (Ej $period_doubling_subs(j,i,1,m) & $period_doubling_pal(j,i+m-j) & ~$period_doubling_occurs(j,i,i+m-j,m-1))\";");
+		L.add("eval test325 \"Ei $period_doubling_rich(i,n)\";");
+		L.add("eval test326 \"Ai An $period_doubling_rich(i,n)\";");
+		L.add("eval test327 \"Aj $period_doubling_in(j,1,n-m-1) => ~$period_doubling_factoreq(i,i+j,m)\";");
+		L.add("eval test328 \"Aj $period_doubling_in(j,1,n-m-1) => ~$period_doubling_factoreq(i+n-m,i+n-m-j,m)\";");
+		L.add("eval test329 \"(n<=1) | (Am $period_doubling_in(m,1,n) => (Ep $period_doubling_in(p,1,m) & ($period_doubling_border(i,p,n) & $period_doubling_uniqpref(i,p,m) & $period_doubling_uniqsuff(i+n-m,p,m))))\";");
+		L.add("eval test330 \"Ei $period_doubling_priv(i,n)\";");
+		L.add("eval test331 \"(n<=1) | (Ej (j<n)& $period_doubling_border(i,j,n) & ~$period_doubling_occurs(i,i+1,j,n-2))\";");
+		L.add("eval test332 \"$period_doubling_closed(i,n) & ~$period_doubling_occurs(i,0,n,i+n-1)\";");
+		L.add("eval test333 \"Ei $period_doubling_closed(i,n)\";");
+		L.add("eval test334 \"$period_doubling_pal(i,n) & (Aj ((j>=1)&$period_doubling_factoreq(i,j,n)) => (PD[j-1] != PD[j+n]))\";");
+		L.add("eval test335 \"Ei $period_doubling_maxpal(i,n)\";");
+		L.add("eval test336 \"$period_doubling_subs(i,j,m,n-1) & (Er $period_doubling_subs(r,j,m,n-1) & $period_doubling_factoreq(i,r,m) & PD[r+m]=@0) & (Es $period_doubling_subs(s,j,m,n-1) & $period_doubling_factoreq(i,s,m) & PD[s+m] = @1)\";");
+		L.add("eval test337 \"Ei $period_doubling_rtspec(i,j,p,n)\";");
+		L.add("eval test338 \"~$period_doubling_rt(j,n,p) & (Ac (~$period_doubling_rt(j,n,c)) => (c >=p))\";");
+		L.add("eval test339 \"Er Es ($period_doubling_subs(r,j,p+1,n) & $period_doubling_subs(s,j,p+1,n) & $period_doubling_factoreq(r,s,p) & T[s+p] != T[r+p])\";");
+		L.add("eval test340 \"~$period_doubling_rt2(j,n,p) & (Ac (~$period_doubling_rt2(j,n,c)) => (c >=p))\";");
+		L.add("eval test341 \"~$period_doubling_occurs(j+n-q,j,q,n-1)\";");
+		L.add("eval test342 \"$period_doubling_unrepsuf(j,n,q) & (Ac $period_doubling_unrepsuf(j,n,c) => (c >= q))\";");
+		L.add("eval test343 \"(n <=1) | (Ep Eq (n=p+q) & $period_doubling_minunrepsuf(j,n,p) & $period_doubling_minrt(j,n,q))\";");
+		L.add("eval test344 \"Ej $period_doubling_trap(j,n)\";");
+		L.add("eval test345 \"Em (m+2 <= n) & Ej Ek ($period_doubling_subs(j,i+1,m,n-2) & $period_doubling_subs(k,i+1,m,n-2) & $period_doubling_pal(j,m) & $period_doubling_factoreq(j,k,m) & (PD[j-1]=PD[j+m]) & (PD[k-1]=PD[k+m]) & (PD[j-1] != PD[k-1]))\";");
+		L.add("eval test346 \"Em (m >= 2) & (Ej Ek ($period_doubling_subs(j,i,m,n) & $period_doubling_subs(k,i,m,n) & $period_doubling_pal(j,m) & $period_doubling_pal(k,m) & $period_doubling_factoreq(j+1,k+1,m-2) & T[j]!=T[k]))\";");
+		L.add("eval test347 \"Ej ~$period_doubling_unbal(j,n)\";");
+		
+		L.add("eval test348 \"?msd_fib Ak (k<n) => F[i+k]=F[j+k]\";");
+		L.add("eval test349 \"?msd_fib Ak (k<n) => F[i+k] = F[i+n-1-k]\";");
+		L.add("eval test350 \"?msd_fib (m<=n) & (Ek (k+m<=n) & $fibonacci_factoreq(i,j+k,m))\";");
+		L.add("eval test351 \"?msd_fib $fibonacci_in(m,1,n) & $fibonacci_factoreq(i,i+n-m,m)\";");
+		L.add("eval test352 \"?msd_fib Am $fibonacci_in(m,1,n) => (Ej $fibonacci_subs(j,i,1,m) & $fibonacci_pal(j,i+m-j) & ~$fibonacci_occurs(j,i,i+m-j,m-1))\";");
+		L.add("eval test353 \"?msd_fib Ei $fibonacci_rich(i,n)\";");
+		L.add("eval test354 \"?msd_fib Ai An $fibonacci_rich(i,n)\";");
+		L.add("eval test355 \"?msd_fib (n<=1) | (Am $fibonacci_in(m,1,n) => (Ep $fibonacci_in(p,1,m) & $fibonacci_border(i,p,n) & ~$fibonacci_occurs(i,i+1,p,m-1) & ~$fibonacci_occurs(i,i+n-m,p,m-1)))\";");
+		L.add("eval test356 \"?msd_fib Ei $fibonacci_priv(i,n)\";");
+		L.add("eval test357 \"?msd_fib (n<=1) | (Ej (j<n)& $fibonacci_border(i,j,n) & ~$fibonacci_occurs(i,i+1,j,n-2))\";");
+		L.add("eval test358 \"?msd_fib $fibonacci_closed(i,n) & ~$fibonacci_occurs(i,0,n,i+n-1)\";");
+		L.add("eval test359 \"?msd_fib Ei $fibonacci_closed(i,n)\";");
+		L.add("eval test360 \"?msd_fib $fibonacci_pal(i,n) & (Aj ((j>=1)&$fibonacci_factoreq(i,j,n)) => (F[j-1] != F[j+n]))\";");
+		L.add("eval test361 \"?msd_fib Ei $fibonacci_maxpal(i,n)\";");
+		L.add("eval test362 \"?msd_fib $fibonacci_subs(i,j,m,n-1) & (Er $fibonacci_subs(r,j,m,n-1) & $fibonacci_factoreq(i,r,m) & F[r+m]=@0) & (Es $fibonacci_subs(s,j,m,n-1) & $fibonacci_factoreq(i,s,m) & F[s+m] = @1)\";");
+		L.add("eval test363 \"?msd_fib Ei $fibonacci_rtspec(i,j,p,n)\";");
+		L.add("eval test364 \"?msd_fib (~$fibonacci_rt(j,n,p)) & (Ac (~$fibonacci_rt(j,n,c)) => (c >= p))\";");
+		L.add("eval test365 \"?msd_fib ~$fibonacci_occurs(j+n-q,j,q,n-1)\";");
+		L.add("eval test366 \"?msd_fib $fibonacci_unrepsuf(j,n,q) & (Ac $fibonacci_unrepsuf(j,n,c) => (c >= q))\";");
+		L.add("eval test367 \"?msd_fib (Ep Eq (n=p+q) & $fibonacci_minunrepsuf(j,n,p) & $fibonacci_minrt(j,n,q))\";");
+		L.add("eval test368 \"?msd_fib Ej  $fibonacci_trap(j,n)\";");
+		L.add("eval test369 \"?msd_fib Em (m+2 <= n) & Ej Ek ($fibonacci_subs(j,i+1,m,n-2) & $fibonacci_subs(k,i+1,m,n-2) & $fibonacci_pal(j,m) & $fibonacci_factoreq(j,k,m) & (F[j-1]=F[j+m]) & (F[k-1]=F[k+m]) & (F[j-1] != F[k-1]))\";");
+		L.add("eval test370 \"Em (m >= 2) & (Ej Ek ($fibonacci_subs(j,i,m,n) & $fibonacci_subs(k,i,m,n) & $fibonacci_pal(j,m) & $fibonacci_pal(k,m) & $fibonacci_factoreq(j+1,k+1,m-2) & F[j]!=F[k]))\";");
+		L.add("eval test371 \"?msd_fib Ej ~$fibonacci_unbal(j,n)\";");
+		L.add("eval test372 \"?msd_fib Ej En ~$fibonacci_unbal(j,n)\";");
+		
+		// matrix calculation tests
+		L.add("eval test373 n j \"i=j+1\";");// error: incidence matrices for the variable n cannot be calculated, because n is not a free variable. : eval test373 n j "i=j+1";
+		L.add("eval test374 i j \"i=j+1\";");
+		L.add("eval test375 i n \"?msd_fib Aj j<i => (Ek k<n & F[j+k]!=F[i+k])\"::");
+		L.add("eval test376 i      length_abc \"?msd_fib Aj j<i => (Ek k<length_abc & F[j+k]!=F[i+k])\"::");
+		L.add("eval test377     length_abc               \"?msd_fib Aj j<i => (Ek k<length_abc & F[j+k]!=F[i+k])\"     ::");
+		L.add("def test378 n \"?msd_fib (j >= 1) & (i+2*j <= n) & (Ak k<j => F[i+k]=F[i+j+k])\"::");
+		L.add("def test379 n \"?msd_fib ($fibmr(i,n,n+1) & ~$fibmr(i,n-1,n))\"::");
+		L.add("eval test380 23 \"n23 = 10\"::");// error: invalid use of eval/def command: eval test380 23 "n23 = 10"::
+		L.add("eval test381 n23 \"En23 n23 = 10\"::");
+		L.add("eval test382 n23 \"En23 n23 = 10 & i = 12\"::");
+		L.add("eval test383 n23 \"Ei n23 = 10 & i = 12\"::");
+		
 	}
-	public void runTestCases() throws Exception{
+	public void runPerformanceTest(String name,int numberOfRuns) throws Exception{
+		PrintWriter out = new PrintWriter(new FileOutputStream(new File(directoryAddress+performanceTestFileName), true /* append = true */));
+		out.println("----------------------------------------");
+		out.println("Performance Test Result for " + name);
+		out.println("Number of runs: " + numberOfRuns);
+		out.println("Number of testcases: " + L.size());
+		long total = 0;
+		for(int i=0;i!=numberOfRuns;++i){	
+			long runtime = runTestCases();
+			out.println((i+1) + "th run: " + runtime + "ms");
+			total += runtime;
+		}
+		out.println();
+		out.println("total: " + total + "ms");
+		out.println("run average: " + total/numberOfRuns + "ms");
+		out.println("testcase average: " + total/(numberOfRuns*L.size()) + "ms");
+		out.println("----------------------------------------");
+		out.close();
+	}
+	public long runTestCases() throws Exception{
+		return runTestCases(0,L.size());
+	}
+	public long runTestCases(int begin) throws Exception{
+		return runTestCases(begin,L.size());
+	}
+	public long runTestCases(int begin, int end) throws Exception{
 		loadTestCases();
 		int failedTestsCount = 0;
-		if(testCases == null || testCases.size() == 0)return;
-		for(int i = 0; i < testCases.size();i++){
-			TestCase t = testCases.get(i);
+		int mplFailedTestsCount = 0;
+		int detailsFailedTestsCount = 0;
+		int errorFailedTestsCount = 0;
+		int automataFailedTestsCount = 0;
+		long before = 0;
+		long after = 0;
+		long total = 0;
+		if(testCases == null || testCases.size() == 0)return total;
+		System.out.println("Running test cases from test case " + begin +" to test case " + end);
+		for(int i = begin; i < end;i++){
+			TestCase expected = testCases.get(i);
 			String command = L.get(i);
 			System.out.println("\t\t"+command);
 			try{
-				Automaton res = prover.dispatchForIntegrationTest(command);
-				if(res == null && t.result == null)continue;
-				if((res == null || t.result == null) || !res.equals(t.result)){
+				before = System.currentTimeMillis();
+				TestCase actual = prover.dispatchForIntegrationTest(command);
+				after = System.currentTimeMillis();
+				total += (after-before);
+				
+				if(!conformMPL(expected.mpl.trim(),actual.mpl.trim())){
 					failedTestsCount++;
-					System.out.println("test " + i + " failed!");
+					mplFailedTestsCount++;
+					System.out.println("test " + i + " failed! Actual and expected .mpl files do not conform.");
+					continue;
+				}
+				
+				if(!conformDetails(expected.details.trim(),actual.details.trim())){
+					failedTestsCount++;
+					detailsFailedTestsCount++;
+					System.out.println("test " + i + " failed! Actual and expected detailed logs do not conform.");
+					continue;
+				}
+				
+				if((actual.result == null && expected.result != null) || 
+				   (actual.result != null && expected.result == null) || 
+				   !actual.result.equals(expected.result)){
+					failedTestsCount++;
+					automataFailedTestsCount++;
+					System.out.println("test " + i + " failed! Actual and expected automata do not conform.");
 				}
 			}
 			catch(Exception e){
-				if(!e.getMessage().equals(t.error)){
+				if(!e.getMessage().equals(expected.error)){
+					errorFailedTestsCount++;
 					failedTestsCount++;
-					System.out.println("test " + i + " failed!");
+					System.out.flush();
+					System.out.println("test " + i + " failed! Actual and expected error messages do not conform.");
 				}
 			}
 		}
 		if(failedTestsCount == 0){
 			System.out.println("all tests completed successfully!");
-			//delete all test generated files
-			/*try{
-				for(int i = 0; i != L.size();++i){
-					File file = new File("../Result/test"+i+".txt");
-					file.delete();
-				}
-				File file = new File("../Word Automata Library/T2.txt");
-				file.delete();
-				file = new File("../Automata Library/");
-			}
-			catch(Exception e){
-				return;
-			}*/
 		}
 		else{
 			System.out.println(failedTestsCount + " test cases failed!");
+			System.out.println(automataFailedTestsCount + " test cases failed because of resulting automata mistmach!");
+			System.out.println(errorFailedTestsCount + " test cases failed because of error messages mistmach!");			
+			System.out.println(mplFailedTestsCount + " test cases failed because of mpl mistmach!");
+			System.out.println(detailsFailedTestsCount + " test cases failed because of detailed logs mistmach!");	
 		}
+		return total;
 	}
+	
+	private boolean conformMPL(String expected_mpl,String actual_mpl){
+		if(expected_mpl == null && actual_mpl == null)return true;
+		if(expected_mpl.length() == 0 && actual_mpl.length() == 0) return true;
+		//if(expected_mpl.length() != actual_mpl.length()){
+		//	return false;
+		//}
+		if(expected_mpl.equals(actual_mpl)) return true;
+		return false;
+	}
+	
+	private boolean conformDetails(String expected_details,String actual_details){
+		if(expected_details == null && actual_details == null)return true;
+		if(expected_details.length() == 0 && actual_details.length() == 0) return true;
+		expected_details = expected_details.replaceAll("\\d+ms", "");
+		actual_details = actual_details.replaceAll("\\d+ms", "");
+		return expected_details.equals(actual_details);
+		/*String regex = "(.*)\\s*";
+		String time = "(.*)(\\d+ms)$";
+		Pattern pattern = Pattern.compile(regex);
+		Matcher expected_matcher = pattern.matcher(expected_details);
+		Matcher actual_matcher = pattern.matcher(actual_details);
+		Pattern timePattern = Pattern.compile(time);
+		while(expected_matcher.find()){
+			System.out.println("expected:"+ expected_matcher.group(0)+")");
+			if(!actual_matcher.find()){
+				return false;
+			}
+			String expected = expected_matcher.group(0);
+			String actual = actual_matcher.group(0);
+			Matcher expected_time = timePattern.matcher(expected);
+			Matcher actual_time = timePattern.matcher(actual);
+			if(expected_time.find()){
+				expected = expected_time.group(0);
+			}
+			if(actual_time.find()){
+				actual = actual_time.group(0);
+			}
+			
+			System.out.println("actual:"+ actual+")");
+
+			if(actual.compareTo(expected) != 0){
+				return false;
+			}
+		}
+		if(actual_matcher.find()){
+			return false;
+		}
+		return true;*/
+	}
+	
 	public void loadTestCases() throws Exception{
 		String command;
 		testCases = new ArrayList<TestCase>();
 		for(int i = 0 ; i < L.size();i++){
 			command = L.get(i);
 			Automaton M = null;
-			String error = "";
+			StringBuffer error = new StringBuffer();
+			StringBuffer details = new StringBuffer();
+			StringBuffer mpl = new StringBuffer();
 			if(new File(directoryAddress+"automaton"+Integer.toString(i)+".txt").isFile()){
 				M = new Automaton(directoryAddress+"automaton"+i+".txt");
 			}
-			else{
-				BufferedReader errorReader = new BufferedReader(new InputStreamReader(new FileInputStream(directoryAddress+"error" + Integer.toString(i)+".txt"), "utf-16"));
-				//System.out.println(errorReader.readLine());
+			if(new File(directoryAddress+"error"+Integer.toString(i)+".txt").isFile()){
+				BufferedReader errorReader = new BufferedReader(new InputStreamReader(new FileInputStream(directoryAddress+"error" + Integer.toString(i)+".txt"), "utf-8"));
 				String temp;
 				boolean flag = false;
 				while((temp = errorReader.readLine())!= null){
 					if(flag)
-						error +=UtilityMethods.newLine() + temp;
+						error.append(UtilityMethods.newLine() + temp);
 					else 
-						error += temp;
+						error.append(temp);
 					flag = true;
 				}
 				errorReader.close();
 			}
-			testCases.add(new TestCase(command,M,error));
+			
+			if(new File(directoryAddress+"mpl"+Integer.toString(i)+".mpl").isFile()){
+				BufferedReader mplReader = new BufferedReader(new InputStreamReader(new FileInputStream(directoryAddress+"mpl" + Integer.toString(i)+".mpl"), "utf-8"));
+				String temp;
+				boolean flag = false;
+				while((temp = mplReader.readLine())!= null){
+					if(flag)
+						mpl.append(UtilityMethods.newLine() + temp);
+					else 
+						mpl.append(temp);
+					flag = true;
+				}
+				mplReader.close();
+			}
+			
+			if(new File(directoryAddress+"details"+Integer.toString(i)+".txt").isFile()){
+				BufferedReader detailsReader = new BufferedReader(new InputStreamReader(new FileInputStream(directoryAddress+"details" + Integer.toString(i)+".txt"), "utf-8"));
+				String temp;
+				boolean flag = false;
+				while((temp = detailsReader.readLine())!= null){
+					if(flag)
+						details.append(UtilityMethods.newLine() + temp);
+					else 
+						details.append(temp);
+					flag = true;
+				}
+				detailsReader.close();
+			}
+			
+			testCases.add(new TestCase(command,M,error.toString(),mpl.toString(),details.toString()));
 		}
 	}
 	public void createTestCases() throws Exception{
 		for(int i = 0; i < L.size();i++){
 			String command = L.get(i);
 			System.out.println(command);
-			Automaton res = null;
-			String error = null;
+			TestCase test_case = null;
 			try{
-				res = prover.dispatchForIntegrationTest(command);
+				test_case = prover.dispatchForIntegrationTest(command);
 			}
 			catch(Exception e){
-				error = e.getMessage();
+				test_case = new TestCase(command,null,e.getMessage(),"","");
 			}
-			testCases.add(new TestCase(command,res,error));
+			testCases.add(test_case);
 		}
 		writeTestCases();
 	}
@@ -383,12 +736,21 @@ public class IntegrationTest {
 			TestCase t = testCases.get(i);
 			if(t.result != null){
 				t.result.write(directoryAddress+"automaton" +Integer.toString(i)+ ".txt");
-				//t.result.draw(directoryAddress+"automaton"+Integer.toString(i)+".gv", "\""+t.command+"\"");
 			}
-			else{
-				PrintWriter errorWriter = new PrintWriter(directoryAddress+"error"+Integer.toString(i)+".txt", "UTF-16");
+			if(t.error != null && t.error.length() > 0){
+				PrintWriter errorWriter = new PrintWriter(directoryAddress+"error"+Integer.toString(i)+".txt", "UTF-8");
 				errorWriter.println(t.error);
 				errorWriter.close();
+			}
+			if(t.mpl != null && t.mpl.length() > 0){
+				PrintWriter mplWriter = new PrintWriter(directoryAddress+"mpl"+Integer.toString(i)+".mpl", "UTF-8");
+				mplWriter.println(t.mpl);
+				mplWriter.close();
+			}
+			if(t.details != null && t.details.length() > 0){
+				PrintWriter detailsWriter = new PrintWriter(directoryAddress+"details"+Integer.toString(i)+".txt", "utf-8");
+				detailsWriter.println(t.details);
+				detailsWriter.close();
 			}
 		}
 	}

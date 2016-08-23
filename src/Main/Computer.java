@@ -29,40 +29,62 @@ import Token.Token;
 
 
 public class Computer {
-	List<List<String>> matrix_requests;
 	Predicate predicate_object;
 	String predicate_string;
 	Expression result;
 	Automaton D;
-	String log;
+	StringBuffer log;
+	StringBuffer log_details;
+	String mpl;
 	boolean printSteps;
-	public Computer(String predicate,List<List<String>> matrix_requests,boolean printSteps)throws Exception{
-		this.log = "";
+	boolean printDetails;
+	public Computer(String predicate, boolean printSteps, boolean printDetails)throws Exception{
+		this.log = new StringBuffer();
+		this.log_details = new StringBuffer();
+		mpl = "";
 		this.predicate_string = predicate;
 		predicate_object = new Predicate(predicate);
-		this.matrix_requests = matrix_requests;
 		this.printSteps = printSteps;
+		this.printDetails = printDetails;
 		compute();
-		if(matrix_requests.size() > 0)
-			computeMatrices();
-	}
-	private void computeMatrices(){
 	}
 	public Automaton getTheFinalResult(){
 		return result.M;
 	}
-	public void writeMatrices(String address){
+	public void writeMatrices(String address, List<String> free_variables) throws Exception{
+		try {
+			mpl = result.M.write_matrices(address, free_variables);
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new Exception(e.getMessage());
+		}
 	}
-	public void writeLog(String address){
+	public void writeLog(String address) throws Exception {
 		PrintWriter out;
 		try {
-			out = new PrintWriter(address, "UTF-16");
-			out.write(log);
+			out = new PrintWriter(address, "UTF-8");
+			out.write(log.toString());
 			out.close();
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
+			throw new Exception(e.getMessage());
 		} catch (UnsupportedEncodingException e) {
 			e.printStackTrace();
+			throw new Exception(e.getMessage());
+		}
+	}
+	public void writeDetailedLog(String address) throws Exception{
+		PrintWriter out;
+		try {
+			out = new PrintWriter(address, "UTF-8");
+			out.write(log_details.toString());
+			out.close();
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+			throw new Exception(e.getMessage());
+		} catch (UnsupportedEncodingException e) {
+			e.printStackTrace();
+			throw new Exception(e.getMessage());
 		}
 	}
 	public void drawAutomaton(String address) throws Exception{
@@ -79,16 +101,18 @@ public class Computer {
 		List<Token> postOrder = predicate_object.get_postOrder();
 		String prefix ="";
 		long timeBeginning = System.currentTimeMillis();
-		String step;
+		String step,preStep;
 		for(Token t:postOrder){
 			try{
 				long timeBefore = System.currentTimeMillis();
-				t.act(expression_Stack);
+				String operands = "";
+				t.act(expression_Stack,printDetails,prefix,log_details);
 				long timeAfter = System.currentTimeMillis();
 				if(t.isOperator() && expression_Stack.peek().is(Type.automaton)){
-					step = prefix + expression_Stack.peek() + " has " + expression_Stack.peek().M.Q +" states: " + (timeAfter-timeBefore)+"ms";
-					log += step + UtilityMethods.newLine();
-					if(printSteps){
+					step = prefix + expression_Stack.peek() + ":" + expression_Stack.peek().M.Q +" states - " + (timeAfter-timeBefore)+"ms";
+					log.append(step + UtilityMethods.newLine());
+					log_details.append(step + UtilityMethods.newLine());
+					if(printSteps||printDetails){
 						System.out.println(step);
 					}
 					prefix += " ";
@@ -102,8 +126,9 @@ public class Computer {
 		}
 		long timeEnd = System.currentTimeMillis();
 		step = "total computation time: " + (timeEnd - timeBeginning)+"ms";
-		log += step;
-		if(printSteps)System.out.println(step);
+		log.append(step);
+		log_details.append(step);
+		if(printSteps||printDetails)System.out.println(step);
 		if(expression_Stack.size() > 1){
 			String message = "cannot evaluate the followings into a single automaton:"+UtilityMethods.newLine();
 			Stack<Expression> tmp = new Stack<Expression>();

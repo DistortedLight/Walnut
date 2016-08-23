@@ -23,11 +23,15 @@ import Automata.Automaton;
 public class TestCase {
 	String command;
 	String error;
+	String details;
+	String mpl;
 	Automaton result;
-
-	public TestCase(String command,Automaton result,String error){
+	
+	public TestCase(String command,Automaton result,String error,String mpl,String details){
 		this.command = command;
 		this.result = result;
 		this.error = error;
+		this.mpl = mpl;
+		this.details = details;
 	}
 }

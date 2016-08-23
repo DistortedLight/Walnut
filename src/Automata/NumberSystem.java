@@ -121,7 +121,7 @@ public class NumberSystem {
 			addition = new Automaton(addressForAddition);
 		else if(new File(complement_addressForAddition).isFile()){
 			addition = new Automaton(complement_addressForAddition);
-			addition.reverse();
+			addition.reverse(false,null,null);
 		}
 		else{
 			if(UtilityMethods.isNumber(base) && Integer.parseInt(base) > 1) base_n_addition(Integer.parseInt(base));
@@ -155,7 +155,7 @@ public class NumberSystem {
 		}
 		else if(new File(complement_addressForLessThan).isFile()){
 			lessThan = new Automaton(complement_addressForLessThan);
-			lessThan.reverse();
+			lessThan.reverse(false,null,null);
 		}
 		else lexicographicLessThan(addition.A.get(0));
 		/**
@@ -179,7 +179,7 @@ public class NumberSystem {
 			allRepresentations = new Automaton(addressForTheSetOfAllRepresentations);
 		else if(new File(complement_addressForTheSetOfAllRepresentations).isFile()){
 			allRepresentations = new Automaton(complement_addressForTheSetOfAllRepresentations);
-			allRepresentations.reverse();
+			allRepresentations.reverse(false,null,null);
 		}
 		else{
 			flag_should_we_use_allRepresentations = false;
@@ -246,7 +246,7 @@ public class NumberSystem {
 				lessThan.d.get(1).put(i*alphabet.size()+j, dest);
 			}
 		}
-		if(!is_msd)lessThan.reverse();
+		if(!is_msd)lessThan.reverse(false,null,null);
 	}
 	private void applyAllRepresentations() throws Exception{
 		addition.applyAllRepresentations();
@@ -299,7 +299,7 @@ public class NumberSystem {
 			}
 		}
 		if(!is_msd)
-			addition.reverse();
+			addition.reverse(false,null,null);
 	}
 	/**
 	 * 
@@ -346,17 +346,17 @@ public class NumberSystem {
 		case "!=":
 			M = equality.clone();
 			M.bind(a,b);
-			M.not();
+			M.not(false,null,null);
 			break;
 		case ">=":
 			M = lessThan.clone();
 			M.bind(a,b);
-			M.not();
+			M.not(false,null,null);
 			break;
 		case "<=":
 			M = lessThan.clone();
 			M.bind(b,a);
-			M.not();
+			M.not(false,null,null);
 			break;
 		default:
 			throw new Exception("undefined comparison operator");
@@ -375,12 +375,12 @@ public class NumberSystem {
 		Automaton N,M;
 		N = get(b);
 		if(comparisonOperator.equals("=")){N.bind(a);return N;}
-		else if(comparisonOperator.equals("!=")){N.bind(a);N.not();return N;}
+		else if(comparisonOperator.equals("!=")){N.bind(a);N.not(false,null,null);return N;}
 		String B = "new " + a;//this way, we make sure B != a.
 		N.bind(B);
 		M = comparison(a, B, comparisonOperator);
-		M = M.and(N);
-		M.quantify(B);
+		M = M.and(N,false,null,null);
+		M.quantify(B,false,null,null);
 		return M;
 	}
 	/** 
@@ -458,8 +458,8 @@ public class NumberSystem {
 		String B = a+c; //this way we make sure that B is not equal to a or c
 		N.bind(B);
 		Automaton M = arithmetic(a, B, c, arithmeticOperator);
-		M = M.and(N);
-		M.quantify(B);
+		M = M.and(N,false,null,null);
+		M.quantify(B,false,null,null);
 		return M;
 	}
 	/**
@@ -489,8 +489,8 @@ public class NumberSystem {
 		String A = b+c; //this way we make sure that A is not equal to b or c
 		N.bind(A);
 		Automaton M = arithmetic(A, b, c, arithmeticOperator);
-		M = M.and(N);
-		M.quantify(A);
+		M = M.and(N,false,null,null);
+		M.quantify(A,false,null,null);
 		return M;
 	}
 	/**
@@ -504,17 +504,11 @@ public class NumberSystem {
 		if(constantsDynamicTable.containsKey(n))return constantsDynamicTable.get(n);
 		
 		if(n == 0){
-			Automaton zero = new Automaton("0*",addition.A.get(0),this);
-			constantsDynamicTable.put(0, zero);
+			Automaton zero = make_zero();
 			return zero;
 		}
 		if(n == 1){
-			Automaton one;
-			if(is_msd)
-				one = new Automaton("0*1",addition.A.get(0),this);
-			else 
-				one = new Automaton("10*",addition.A.get(0),this);
-			constantsDynamicTable.put(1, one);
+			Automaton one = make_one();
 			return one;
 		}
 		String a = "a",b = "b",c = "c";
@@ -524,9 +518,9 @@ public class NumberSystem {
 		Automaton N = get(n/2 + (n%2 == 0 ? 0:1));
 		N.bind(b);
 		Automaton P = arithmetic(a, b, c, "+");
-		P = P.and(M);
-		P = P.and(N);
-		P.quantify(a,b,is_msd);
+		P = P.and(M,false,null,null);
+		P = P.and(N,false,null,null);
+		P.quantify(a,b,is_msd,false,null,null);
 		constantsDynamicTable.put(n, P);
 		return P;
 	}
@@ -553,9 +547,9 @@ public class NumberSystem {
 		Automaton N = getMultiplication(n/2 + (n%2 == 0 ? 0:1));
 		N.bind(a,c);		
 		Automaton P = arithmetic(b, c, d, "+");
-		P = P.and(M);
-		P = P.and(N);
-		P.quantify(b,c,is_msd);
+		P = P.and(M,false,null,null);
+		P = P.and(N,false,null,null);
+		P.quantify(b,c,is_msd,false,null,null);
 		P.sortLabel();
 		multiplicationsDynamicTable.put(n, P);
 		return P;	
@@ -575,11 +569,46 @@ public class NumberSystem {
 		Automaton M = arithmetic(q,r,a,"+");
 		Automaton N = arithmetic(n,b,q,"*");
 		Automaton P = comparison(r, n, "<");
-		Automaton R = M.and(N);
-		R = R.and(P);
-		R.quantify(q,r, is_msd);
+		Automaton R = M.and(N,false,null,null);
+		R = R.and(P,false,null,null);
+		R.quantify(q,r, is_msd,false,null,null);
 		R.sortLabel();
 		divisionsDynamicTable.put(n, R);
 		return R;
 	}
+	
+	private Automaton make_zero()throws Exception{
+		List<Integer> alph = new ArrayList<Integer>();
+		alph.add(0);
+		alph.add(1);
+		Automaton M = new Automaton("0*",alph,this);
+		M.A = new ArrayList<List<Integer>>();
+		M.A.add(new ArrayList<Integer>(addition.A.get(0)));
+		M.alphabetSize = M.A.get(0).size();
+		M.encoder = new ArrayList<Integer>();
+		M.encoder.add(1);
+		M.canonize();
+		constantsDynamicTable.put(0, M);
+		return M;
+	}
+	
+	private Automaton make_one() throws Exception{
+		List<Integer> alph = new ArrayList<Integer>();
+		alph.add(0);
+		alph.add(1);
+		Automaton M = new Automaton("0*",alph,this);
+		if(is_msd)
+			M = new Automaton("0*1",alph,this);
+		else 
+			M = new Automaton("10*",alph,this);
+		M.A = new ArrayList<List<Integer>>();
+		M.A.add(new ArrayList<Integer>(addition.A.get(0)));
+		M.alphabetSize = M.A.get(0).size();
+		M.encoder = new ArrayList<Integer>();
+		M.encoder.add(1);
+		M.canonize();
+		constantsDynamicTable.put(1, M);
+		return M;
+	}
+	
 }

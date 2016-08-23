@@ -28,7 +28,9 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Hashtable;
@@ -164,6 +166,174 @@ public class Automaton {
 	 * our program, so for more information on how we compute it read the information on List<Integer> encoder field.
 	 */
 	List<TreeMap<Integer,List<Integer>>> d;
+	
+	/**
+	 * Valmari fields
+	 */
+	Partition
+	  B,     // blocks (consist of states)
+	  C;     // cords (consist of transitions)
+
+	int
+	     nn,    // number of states
+	     mm,    // number of transitions
+	     ff;    // number of final states
+	Integer[] T,    // tails of transitions
+	  	  L,    // labels of transitions
+	  	  H;    // heads of transitions	
+
+	/* Adjacent transitions */
+	int[] _A, _F;
+	void make_adjacent( Integer K[] ){
+		int q, t;
+		for( q = 0; q <= nn; ++q ){ _F[q] = 0; }
+		for( t = 0; t < mm; ++t ){ ++_F[K[t]]; }
+		for( q = 0; q < nn; ++q )_F[q+1] += _F[q];
+		for( t = mm; t-- != 0; ){ _A[--_F[K[t]]] = t; }
+	}
+
+	/* Removal of irrelevant parts */
+	int rr = 0;   // number of reached states
+
+	void reach( int q ){
+	  int i = B.L[q];
+	  if( i >= rr ){
+	    B.E[i] = B.E[rr]; B.L[B.E[i]] = i;
+	    B.E[rr] = q; B.L[q] = rr++; }
+	}
+
+	void rem_unreachable( Integer T[], Integer H[] ){
+		make_adjacent( T ); int i, j;
+		for( i = 0; i < rr; ++i ){
+			for( j = _F[B.E[i]]; j < _F[B.E[i] + 1]; ++j ){
+				reach( H[_A[j]] ); 
+			} 
+		}
+		j = 0;
+		for( int t = 0; t < mm; ++t ){
+			if( B.L[T[t]] < rr ){
+				H[j] = H[t]; L[j] = L[t];
+		    	T[j] = T[t]; ++j; 
+		    } 
+		}
+		mm = j; B.P[0] = rr; rr = 0;
+	}
+	
+	/* Minimization algorithm */
+	void minimize_valmari(boolean print, String prefix,StringBuffer log) throws Exception{
+		HashSet<Integer> qqq = new HashSet<Integer>();
+		qqq.add(q0);
+		subsetConstruction(qqq,print,prefix,log);
+		nn = Q;
+		mm = 0;
+		B = new Partition();
+		C = new Partition();
+		ArrayList<Integer> _H = new ArrayList<Integer>(),_L = new ArrayList<Integer>(),_T= new ArrayList<Integer>();
+		//System.out.println("-------------------------------------------");
+		for(int q = 0; q != d.size();++q){
+			for(int l : d.get(q).keySet()) { 
+				for(int p : d.get(q).get(l)) { 
+					mm++;
+					_H.add(p);
+					_T.add(q);
+					_L.add(l);
+					//System.out.println(q + " -> " + p + " - " + l);
+				}
+			}
+		}
+		//System.out.println("-------------------------------------------");
+		T = new Integer[mm];
+		L = new Integer[mm];
+		H = new Integer[mm];
+		_T.toArray(T); _L.toArray(L);_H.toArray(H);
+	    B.init( nn );
+		_A = new int[ mm ]; _F = new int[ nn+1 ];
+		
+		  //reach( q0 ); rem_unreachable( T, H );
+		for( int q = 0; q < nn; ++q ){
+			if(O.get(q) != 0){ 
+				reach( q ); 
+			} 
+		}
+		ff = rr; rem_unreachable( H, T );
+		
+		/* Make initial partition */
+		Partition.W = new int[ mm+1 ]; Partition.M = new int[ mm+1];
+		Partition.M[0] = ff;
+		if( ff != 0 ){ Partition.W[Partition.w++] = 0; B.split(); }
+
+		/* Make transition partition */
+		C.init( mm );
+		if( mm != 0 ){
+			Arrays.sort(C.E, new Comparator<Integer>() {
+		        @Override
+		        public int compare(Integer a, Integer b)
+		        {
+	
+		            return L[a] - L[b];
+		        }
+		    });
+			C.z = Partition.M[0] = 0; int a = L[C.E[0]];
+			for( int i = 0; i < mm; ++i ){
+				int t = C.E[i];
+				if( L[t] != a ){
+					a = L[t]; C.P[C.z++] = i;
+					C.F[C.z] = i; Partition.M[C.z] = 0; 
+				}
+				C.S[t] = C.z; C.L[t] = i; 
+			}
+			C.P[C.z++] = mm;
+		}
+
+		/* Split blocks and cords */
+		make_adjacent( H );
+		int b = 1, c = 0;
+		while( c < C.z ){
+			for(int i = C.F[c]; i < C.P[c]; ++i ){
+				B.mark( T[C.E[i]] ); 
+			}
+			B.split(); ++c;
+			while( b < B.z ){
+				for(int i = B.F[b]; i < B.P[b]; ++i ){
+					for(int j = _F[B.E[i]];j < _F[B.E[i]+1]; ++j){
+						C.mark( _A[j] ); 
+					} 
+				}
+				C.split(); ++b; 
+			}
+		}
+
+		/* Turn the result back to Walnut format for Automata */
+		Q = B.z;
+		q0 = B.S[q0];
+		O = new ArrayList<Integer>(Q);
+		for( int q = 0; q < B.z; ++q ){
+			if( B.F[q] < ff ){
+				O.add(1);
+			} 
+			else {
+				O.add(0);
+			}
+		}
+		
+		d = new ArrayList<TreeMap<Integer,List<Integer>>>(Q);
+		for( int q = 0; q < Q;++q){
+			d.add(new TreeMap<Integer,List<Integer>>());
+		}
+		for( int t = 0; t < mm; ++t ){
+			if( B.L[T[t]] == B.F[B.S[T[t]]] ){
+				int q = B.S[T[t]];
+				int l = L[t];
+				int p = B.S[H[t]];
+				if(!d.get(q).containsKey(l)){
+					d.get(q).put(l, new ArrayList<Integer>());
+				}
+				d.get(q).get(l).add(p);
+			} 
+		}
+		canonized = false;		
+	}
+
 	/**
 	 * Default constructor. It just initializes the field members. 
 	 */
@@ -255,10 +425,12 @@ public class Automaton {
 			}
 		}	
 	}
+	
 	public Automaton(String regularExpression,List<Integer> alphabet,NumberSystem numSys)throws Exception{
 		this(regularExpression,alphabet);
 		NS.set(0,numSys);
 	}
+	
 	/**
 	 * Takes an address and constructs the automaton represented by the file referred to by the address
 	 * @param address
@@ -270,7 +442,7 @@ public class Automaton {
 		int lineNumber = 0;//lineNumber will be used in error messages
 		alphabetSize = 1;
 		try{
-			BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(address), "utf-16"));
+			BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(address), "utf-8"));
 			String line;
 			boolean[] singleton = new boolean[1];
 			while((line = in.readLine())!= null){
@@ -365,7 +537,7 @@ public class Automaton {
 		}
 		catch (IOException e) {
 			e.printStackTrace();
-			throw new Exception("file does not exits: " + address);
+			throw new Exception("file does not exit: " + address);
 		}
 	}
 	/**
@@ -404,16 +576,16 @@ public class Automaton {
 		return M;
 	}
 	
-	public void quantify(String labelToQuantify)throws Exception{
+	public void quantify(String labelToQuantify,boolean print, String prefix,StringBuffer log)throws Exception{
 		Set<String> listOfLabelsToQuantify = new HashSet<String>();
 		listOfLabelsToQuantify.add(labelToQuantify);
-		quantify(listOfLabelsToQuantify);
+		quantify(listOfLabelsToQuantify,print,prefix,log);
 	}
-	public void quantify(String labelToQuantify1,String labelToQuantify2,boolean leadingZeros)throws Exception{
+	public void quantify(String labelToQuantify1,String labelToQuantify2,boolean leadingZeros,boolean print, String prefix,StringBuffer log)throws Exception{
 		Set<String> listOfLabelsToQuantify = new HashSet<String>();
 		listOfLabelsToQuantify.add(labelToQuantify1);
 		listOfLabelsToQuantify.add(labelToQuantify2);
-		quantify(listOfLabelsToQuantify);
+		quantify(listOfLabelsToQuantify,print,prefix,log);
 	}
 	/**
 	 * This method computes the existential quantification of this automaton.
@@ -428,8 +600,8 @@ public class Automaton {
 	 * @param leadingZero determines which of leadingZeros or trailingZeros should be addressed after quantification.
 	 * @return
 	 */
-	public void quantify(Set<String> listOfLabelsToQuantify)throws Exception{
-		quantifyHelper(listOfLabelsToQuantify);
+	public void quantify(Set<String> listOfLabelsToQuantify, boolean print, String prefix,StringBuffer log)throws Exception{
+		quantifyHelper(listOfLabelsToQuantify,print,prefix,log);
 		if(TRUE_FALSE_AUTOMATON)return;
 		
 		boolean isMsd = true;
@@ -443,9 +615,9 @@ public class Automaton {
 			flag = true;
 		}
 		if(isMsd)
-			fixLeadingZerosProblem();
+			fixLeadingZerosProblem(print,prefix,log);
 		else
-			fixTrailingZerosProblem();
+			fixTrailingZerosProblem(print,prefix,log);
 	}
 	/**
 	 * This method is very similar to public void quantify(Set<String> listOfLabelsToQuantify,boolean leadingZeros)throws Exception
@@ -453,13 +625,25 @@ public class Automaton {
 	 * @param listOfLabelsToQuantify
 	 * @throws Exception
 	 */
-	private void quantifyHelper(Set<String> listOfLabelsToQuantify)throws Exception{
+	private void quantifyHelper(Set<String> listOfLabelsToQuantify,boolean print, String prefix, StringBuffer log)throws Exception{
 		if(listOfLabelsToQuantify.isEmpty())
 			return;
 		//throw new Exception("quantification requires a non empty list of qunatified variables");
-		for(String s:listOfLabelsToQuantify)
+		String name_of_labels = "";
+		for(String s:listOfLabelsToQuantify){
 			if(!label.contains(s))
 				throw new Exception("variable " + s + " in the list of quantified variables is not a free variable");
+			if(name_of_labels.length() == 0)
+				name_of_labels += s;
+			else
+				name_of_labels += ","+s;
+		}
+		long timeBefore = System.currentTimeMillis();
+		if(print){
+			String msg = prefix + "quantifying:" + Q + " states";
+			log.append(msg + UtilityMethods.newLine());
+			System.out.println(msg);
+		}
 		
 		/**
 		 * If this is the case, then the quantified automaton is either the true or false automaton.
@@ -508,15 +692,27 @@ public class Automaton {
 			}
 		}
 		d = new_d;	
-		minimize();	
+		minimize(print,prefix +" ",log);	
+		long timeAfter = System.currentTimeMillis();
+		if(print){
+			String msg = prefix + "quantified:" + Q + " states - "+(timeAfter-timeBefore)+"ms";
+			log.append(msg + UtilityMethods.newLine());
+			System.out.println(msg);
+		}
 	}
 	/**
 	 * this automaton should not be a word automaton (automaton with output). However, it can be non deterministic.
 	 * @return the reverse of this automaton
 	 * @throws Exception 
 	 */
-	public void reverse() throws Exception{
+	public void reverse(boolean print, String prefix, StringBuffer log) throws Exception{
 		if(TRUE_FALSE_AUTOMATON)return;
+		long timeBefore = System.currentTimeMillis();
+		if(print){
+			String msg = prefix + "reversing:" + Q + " states";
+			log.append(msg + UtilityMethods.newLine());
+			System.out.println(msg);
+		}
 		/**we change the direction of transitions first*/
 		List<TreeMap<Integer,List<Integer>>> new_d = new ArrayList<>();
 		for(int q = 0; q < Q;q++)new_d.add(new TreeMap<Integer,List<Integer>>());
@@ -544,9 +740,16 @@ public class Automaton {
 		}
 		O.set(q0, 1);/**initial state becomes the final state.*/
 		
-		subsetConstruction(setOfFinalStates);
+		subsetConstruction(setOfFinalStates,print,prefix+" ",log);
 		
-		minimize();
+		minimize(print,prefix+" ",log);
+		
+		long timeAfter = System.currentTimeMillis();
+		if(print){
+			String msg = prefix + "reversed:" + Q + " states - "+(timeAfter-timeBefore)+"ms";
+			log.append(msg + UtilityMethods.newLine());
+			System.out.println(msg);
+		}
 	}
 	/**
 	 * This method is used in and, or, not, and many others.
@@ -564,13 +767,21 @@ public class Automaton {
 	 * @return this automaton cross product M.
 
 	 */
-	private Automaton crossProduct(Automaton M,String op)throws Exception{
+	private Automaton crossProduct(Automaton M, String op, boolean print, String prefix, StringBuffer log)throws Exception{
 		if(this.TRUE_FALSE_AUTOMATON || M.TRUE_FALSE_AUTOMATON)
 			throw new Exception("invalid use of the crossProduct method: the automata for this method cannot be true or false automata");
 		if(this.label == null || M.label == null || this.label.size() != A.size() || M.label.size() != M.A.size())
 			throw new Exception("invalid use of the crossProduct method: the automata for this method must have labeled inputs");
 		/**N is going to hold the cross product*/
 		Automaton N = new Automaton();
+		
+		long timeBefore = System.currentTimeMillis();
+		if(print){
+			String msg = prefix + "computing cross product:" + Q + " states - " + M.Q + " states";
+			log.append(msg + UtilityMethods.newLine());
+			System.out.println(msg);
+		}
+		
 		/**
 		 * for example when sameLabelsInMAndThis[2] = 3, then input 2 of M has the same label as input 3 of this
 		 * and when sameLabelsInMAndThis[2] = -1, it means that input 2 of M is not an input of this
@@ -690,6 +901,12 @@ public class Automaton {
 			currentState++;
 		}
 		N.Q = statesList.size();
+		long timeAfter = System.currentTimeMillis();
+		if(print){
+			String msg = prefix + "computed cross product:" + N.Q + " states - "+(timeAfter-timeBefore)+"ms";
+			log.append(msg + UtilityMethods.newLine());
+			System.out.println(msg);
+		}
 		return N;
 	}
 	/**
@@ -698,15 +915,30 @@ public class Automaton {
 	 * @throws Exception 
 
 	 */
-	public Automaton and(Automaton M) throws Exception{	
+	public Automaton and(Automaton M, boolean print, String prefix, StringBuffer log) throws Exception{	
 		if((TRUE_FALSE_AUTOMATON && TRUE_AUTOMATON) && (M.TRUE_FALSE_AUTOMATON && M.TRUE_AUTOMATON)) return new Automaton(true);
 		if((TRUE_FALSE_AUTOMATON && !TRUE_AUTOMATON) || (M.TRUE_FALSE_AUTOMATON && !M.TRUE_AUTOMATON)) return new Automaton(false);
 
 		if(TRUE_FALSE_AUTOMATON && TRUE_AUTOMATON)return M;
 		if(M.TRUE_FALSE_AUTOMATON && M.TRUE_AUTOMATON)return this;
 		
-		Automaton N = crossProduct(M,"&");
-		N.minimize();
+		long timeBefore = System.currentTimeMillis();
+		if(print){
+			String msg = prefix + "computing &:" + Q + " states - " + M.Q + " states";
+			log.append(msg + UtilityMethods.newLine());
+			System.out.println(msg);
+		}
+		
+		Automaton N = crossProduct(M,"&",print,prefix,log);
+		N.minimize(print,prefix+" ",log);
+		
+		long timeAfter = System.currentTimeMillis();
+		if(print){
+			String msg = prefix + "computed &:" + N.Q + " states - "+(timeAfter-timeBefore)+"ms";
+			log.append(msg + UtilityMethods.newLine());
+			System.out.println(msg);
+		}
+		
 		return N;
 	}
 	/**
@@ -714,20 +946,34 @@ public class Automaton {
 	 * @return 	this automaton or M
 	 * @throws Exception 
 	 */
-	public Automaton or(Automaton M) throws Exception{
+	public Automaton or(Automaton M, boolean print, String prefix, StringBuffer log) throws Exception{
 		if((TRUE_FALSE_AUTOMATON && TRUE_AUTOMATON) || (M.TRUE_FALSE_AUTOMATON && M.TRUE_AUTOMATON)) return new Automaton(true);
 		if((TRUE_FALSE_AUTOMATON && !TRUE_AUTOMATON) && (M.TRUE_FALSE_AUTOMATON && !M.TRUE_AUTOMATON)) return new Automaton(false);
 
 		if(TRUE_FALSE_AUTOMATON && !TRUE_AUTOMATON)return M;
 		if(M.TRUE_FALSE_AUTOMATON && !M.TRUE_AUTOMATON)return this;
 		
+		long timeBefore = System.currentTimeMillis();
+		if(print){
+			String msg = prefix + "computing |:" + Q + " states - " + M.Q + " states";
+			log.append(msg + UtilityMethods.newLine());
+			System.out.println(msg);
+		}
 
-		totalize();
-		M.totalize();
-		Automaton N = crossProduct(M,"|");
+		totalize(print,prefix+" ",log);
+		M.totalize(print,prefix+" ",log);
+		Automaton N = crossProduct(M,"|",print,prefix,log);
 	
-		N.minimize();
+		N.minimize(print,prefix +" ",log);
 		N.applyAllRepresentations();
+		
+		long timeAfter = System.currentTimeMillis();
+		if(print){
+			String msg = prefix + "computed |:" + N.Q + " states - "+(timeAfter-timeBefore)+"ms";
+			log.append(msg + UtilityMethods.newLine());
+			System.out.println(msg);
+		}
+		
 		return N;		
 	}
 	/**
@@ -736,7 +982,7 @@ public class Automaton {
 	 * @return this automaton xor M
 	 * @throws Exception
 	 */
-	public Automaton xor(Automaton M) throws Exception{
+	public Automaton xor(Automaton M, boolean print, String prefix, StringBuffer log) throws Exception{
 		if((TRUE_FALSE_AUTOMATON && TRUE_AUTOMATON) && (M.TRUE_FALSE_AUTOMATON && !M.TRUE_AUTOMATON)) return new Automaton(true);
 		if((TRUE_FALSE_AUTOMATON && !TRUE_AUTOMATON) && (M.TRUE_FALSE_AUTOMATON && M.TRUE_AUTOMATON)) return new Automaton(true);
 		if((TRUE_FALSE_AUTOMATON && TRUE_AUTOMATON) && (M.TRUE_FALSE_AUTOMATON && M.TRUE_AUTOMATON)) return new Automaton(false);
@@ -746,19 +992,33 @@ public class Automaton {
 		if(M.TRUE_FALSE_AUTOMATON && !M.TRUE_AUTOMATON)return this;
 		
 		if(TRUE_FALSE_AUTOMATON && TRUE_AUTOMATON){
-			M.not();
+			M.not(print,prefix,log);
 			return M;
 		}
 		if(M.TRUE_FALSE_AUTOMATON && M.TRUE_AUTOMATON){
-			this.not();
+			this.not(print,prefix,log);
 			return this;
 		}
+		
+		long timeBefore = System.currentTimeMillis();
+		if(print){
+			String msg = prefix + "computing ^:" + Q + " states - " + M.Q + " states";
+			log.append(msg + UtilityMethods.newLine());
+			System.out.println(msg);
+		}
 
-		totalize();
-		M.totalize();
-		Automaton N = crossProduct(M,"^");
-		N.minimize();
+		totalize(print,prefix+" ",log);
+		M.totalize(print,prefix+" ",log);
+		Automaton N = crossProduct(M,"^",print,prefix + " ", log);
+		N.minimize(print,prefix+" ",log);
 		N.applyAllRepresentations();
+		
+		long timeAfter = System.currentTimeMillis();
+		if(print){
+			String msg = prefix + "computed ^:" + N.Q + " states - "+(timeAfter-timeBefore)+"ms";
+			log.append(msg + UtilityMethods.newLine());
+			System.out.println(msg);
+		}
 		return N;		
 	}
 	/**
@@ -766,20 +1026,35 @@ public class Automaton {
 	 * @return 	this automaton imply M
 	 * @throws Exception 
 	 */
-	public Automaton imply(Automaton M) throws Exception{		
+	public Automaton imply(Automaton M,boolean print, String prefix, StringBuffer log) throws Exception{		
 		if((TRUE_FALSE_AUTOMATON && TRUE_AUTOMATON) && (M.TRUE_FALSE_AUTOMATON && !M.TRUE_AUTOMATON)) return new Automaton(false);
 		if((TRUE_FALSE_AUTOMATON && !TRUE_AUTOMATON) || (M.TRUE_FALSE_AUTOMATON && M.TRUE_AUTOMATON)) return new Automaton(true);
 		if(TRUE_FALSE_AUTOMATON && TRUE_AUTOMATON)return M;		
 		if(M.TRUE_FALSE_AUTOMATON && !M.TRUE_AUTOMATON){
-			this.not();
+			this.not(print,prefix,log);
 			return this;
 		}
 
-		totalize();
-		M.totalize();
-		Automaton N = crossProduct(M,"=>");
-		N.minimize();
+		long timeBefore = System.currentTimeMillis();
+		if(print){
+			String msg = prefix + "computing =>:" + Q + " states - " + M.Q + " states";
+			log.append(msg + UtilityMethods.newLine());
+			System.out.println(msg);
+		}
+		
+		totalize(print,prefix+" ",log);
+		M.totalize(print,prefix+" ",log);
+		Automaton N = crossProduct(M,"=>",print,prefix+" ",log);
+		N.minimize(print,prefix+" ",log);
 		N.applyAllRepresentations();
+		
+		long timeAfter = System.currentTimeMillis();
+		if(print){
+			String msg = prefix + "computed =>:" + N.Q + " states - "+(timeAfter-timeBefore)+"ms";
+			log.append(msg + UtilityMethods.newLine());
+			System.out.println(msg);
+		}
+		
 		return N;		
 	}
 	/**
@@ -787,7 +1062,7 @@ public class Automaton {
 	 * @return 	this automaton iff M
 	 * @throws Exception 
 	 */
-	public Automaton iff(Automaton M) throws Exception{	
+	public Automaton iff(Automaton M,boolean print, String prefix, StringBuffer log) throws Exception{	
 		if(((TRUE_FALSE_AUTOMATON && TRUE_AUTOMATON) && (M.TRUE_FALSE_AUTOMATON && M.TRUE_AUTOMATON)) ||
 				((TRUE_FALSE_AUTOMATON && !TRUE_AUTOMATON) && (M.TRUE_FALSE_AUTOMATON && !M.TRUE_AUTOMATON))) return new Automaton(true);
 		if(((TRUE_FALSE_AUTOMATON && TRUE_AUTOMATON) && (M.TRUE_FALSE_AUTOMATON && !M.TRUE_AUTOMATON)) ||
@@ -796,36 +1071,66 @@ public class Automaton {
 		if(TRUE_FALSE_AUTOMATON && TRUE_AUTOMATON)return M;
 		if(M.TRUE_FALSE_AUTOMATON && M.TRUE_AUTOMATON)return this;	
 		if(TRUE_FALSE_AUTOMATON && !TRUE_AUTOMATON){
-			M.not();
+			M.not(print,prefix,log);
 			return M;
 		}
 		if(M.TRUE_FALSE_AUTOMATON && !M.TRUE_AUTOMATON){
-			this.not();
+			this.not(print,prefix,log);
 			return this;
 		}
+		
+		long timeBefore = System.currentTimeMillis();
+		if(print){
+			String msg = prefix + "computing <=>:" + Q + " states - " + M.Q + " states";
+			log.append(msg + UtilityMethods.newLine());
+			System.out.println(msg);
+		}
 
-		totalize();
-		M.totalize();
-		Automaton N = crossProduct(M,"<=>");
-		N.minimize();
+		totalize(print,prefix+" ",log);
+		M.totalize(print,prefix+" ",log);
+		Automaton N = crossProduct(M,"<=>",print,prefix+" ",log);
+		N.minimize(print,prefix+" ",log);
 		N.applyAllRepresentations();
+		
+		long timeAfter = System.currentTimeMillis();
+		if(print){
+			String msg = prefix + "computed <=>:" + N.Q + " states - "+(timeAfter-timeBefore)+"ms";
+			log.append(msg + UtilityMethods.newLine());
+			System.out.println(msg);
+		}
+		
 		return N;		
 	}
 	/**
 	 * @return changes this automaton to its negation
 	 * @throws Exception 
 	 */
-	public void not() throws Exception{
+	public void not(boolean print, String prefix, StringBuffer log) throws Exception{
 		if(TRUE_FALSE_AUTOMATON){
 			TRUE_AUTOMATON = !TRUE_AUTOMATON;
 			return;
 		}
-		totalize();
+		
+		long timeBefore = System.currentTimeMillis();
+		if(print){
+			String msg = prefix + "computing ~:" + Q + " states";
+			log.append(msg + UtilityMethods.newLine());
+			System.out.println(msg);
+		}
+		
+		totalize(print,prefix+" ",log);
 		for(int q = 0 ; q < Q;q++)
 			O.set(q, O.get(q) != 0 ? 0 : 1 );
 
-		minimize();
+		minimize(print,prefix+" ",log);
 		applyAllRepresentations();
+		
+		long timeAfter = System.currentTimeMillis();
+		if(print){
+			String msg = prefix + "computed ~:" + Q + " states - "+(timeAfter-timeBefore)+"ms";
+			log.append(msg + UtilityMethods.newLine());
+			System.out.println(msg);
+		}
 	}
 	
 	public boolean equals(Automaton M)throws Exception{
@@ -851,7 +1156,7 @@ public class Automaton {
 				Automaton N = NS.get(i).getAllRepresentations();
 				if(N != null && NS.get(i).should_we_use_allRepresentations()) {
 					N.bind(label.get(i));
-					K = K.and(N);
+					K = K.and(N,false,null,null);
 				}
 			}
 		}
@@ -889,7 +1194,13 @@ public class Automaton {
 	 * This method adds a dead state to totalize the transition function
 	 * @throws Exception 
 	 */
-	private void totalize() throws Exception{
+	private void totalize(boolean print, String prefix, StringBuffer log) throws Exception{
+		long timeBefore = System.currentTimeMillis();
+		if(print){
+			String msg = prefix + "totalizing:" + Q + " states";
+			log.append(msg + UtilityMethods.newLine());
+			System.out.println(msg);
+		}
 		//we first check if the automaton is totalized
 		boolean totalized = true;
 		for(int q = 0 ; q < Q;q++){
@@ -912,6 +1223,13 @@ public class Automaton {
 				d.get(Q-1).put(x, nullState);
 			}
 		}
+		
+		long timeAfter = System.currentTimeMillis();
+		if(print){
+			String msg = prefix + "totalized:" + Q + " states - "+(timeAfter-timeBefore)+"ms";
+			log.append(msg + UtilityMethods.newLine());
+			System.out.println(msg);
+		}
 	}
 	/**
 	 * The operator can be one of "<" ">" "=" "!=" "<=" ">=".
@@ -923,9 +1241,21 @@ public class Automaton {
 	 * @return
 	 * @throws Exception 
 	 */
-	public Automaton compare(Automaton W, String operator) throws Exception{
-		Automaton M = crossProduct(W,operator);
-		M.minimize();
+	public Automaton compare(Automaton W, String operator,boolean print, String prefix,StringBuffer log) throws Exception{
+		long timeBefore = System.currentTimeMillis();
+		if(print){
+			String msg = prefix + "comparing ("+operator+"):" + Q + " states - " + W.Q + " states";
+			log.append(msg + UtilityMethods.newLine());
+			System.out.println(msg);
+		}
+		Automaton M = crossProduct(W,operator,print,prefix+" ",log);
+		M.minimize(print,prefix+" ",log);
+		long timeAfter = System.currentTimeMillis();
+		if(print){
+			String msg = prefix + "compared ("+operator+ "):" + Q + " states - "+(timeAfter-timeBefore)+"ms";
+			log.append(msg + UtilityMethods.newLine());
+			System.out.println(msg);
+		}
 		return M;
 	}
 	/**
@@ -938,7 +1268,13 @@ public class Automaton {
 	 * @return
 	 * @throws Exception 
 	 */
-	public void compare(int o, String operator) throws Exception{
+	public void compare(int o, String operator, boolean print, String prefix,StringBuffer log) throws Exception{
+		long timeBefore = System.currentTimeMillis();
+		if(print){
+			String msg = prefix + "comparing ("+operator+") against "+ o +":" + Q + " states";
+			log.append(msg + UtilityMethods.newLine());
+			System.out.println(msg);
+		}
 		for(int p = 0 ; p < Q;p++){
 			switch(operator){
 			case "<":
@@ -961,7 +1297,13 @@ public class Automaton {
 				break;
 			}
 		}
-		minimize();
+		minimize(print,prefix+" ",log);
+		long timeAfter = System.currentTimeMillis();
+		if(print){
+			String msg = prefix + "compared ("+operator+ ") against "+o+":" + Q + " states - "+(timeAfter-timeBefore)+"ms";
+			log.append(msg + UtilityMethods.newLine());
+			System.out.println(msg);
+		}
 	}
 	
 	/**
@@ -972,7 +1314,7 @@ public class Automaton {
 	 */
 	public void write(String address){
 		try {
-			PrintWriter out = new PrintWriter(address, "UTF-16");
+			PrintWriter out = new PrintWriter(address, "UTF-8");
 			if(TRUE_FALSE_AUTOMATON){
 				if(TRUE_AUTOMATON)
 					out.write("true");
@@ -1085,10 +1427,141 @@ public class Automaton {
 			e2.printStackTrace();
 		}
 	}
+	
+	/**
+	 * Writes down matrices for this automaton to a .mpl file given by the address. 
+	 * @param address
+	 */
+	public String write_matrices(String address,List<String> free_variables)throws Exception{
+	    if(TRUE_FALSE_AUTOMATON){
+			throw new Exception("incidence matrices cannot be calculated, because the automaton does not have a free variable.");
+	    }
+    	canonize();
+    	StringBuffer s = new StringBuffer();
+    	write_initial_state_vector(s);
+    	s.append(UtilityMethods.newLine() + "# In what follows, the M_i_x, for a free variable i and a value x, denotes" + UtilityMethods.newLine());
+    	s.append("# an incidence matrix of the underlying graph of (the automaton of)" + UtilityMethods.newLine());
+    	s.append("# the predicate in the query." + UtilityMethods.newLine());
+    	s.append("# For every pair of states p and q, the entry M_i_x[p][q] denotes the number of" + UtilityMethods.newLine());
+    	s.append("# transitions with i=x from p to q." + UtilityMethods.newLine());
+	    for(String variable : free_variables){
+	    	if(!label.contains(variable)){
+				throw new Exception("incidence matrices for the variable " + variable + " cannot be calculated, because " + variable +" is not a free variable.");
+	    	}
+	    	int index = label.indexOf(variable);
+	    	for(int value:A.get(index)){
+	    		write_matrix_for_a_variable_value_pair(variable,value,index,s);
+	    	}
+	    }
+    	write_final_states_vector(s);
+    	String res = s.toString();
+	
+	    try {
+			PrintWriter out = new PrintWriter(address, "UTF-8");
+			out.write(res);
+			out.close();
+		} catch (FileNotFoundException e2) {
+			e2.printStackTrace();
+		} catch (UnsupportedEncodingException e2) {
+			e2.printStackTrace();
+		}
+	    return res;
+	}
+	private void write_matrix_for_a_variable_value_pair(String variable, int value, int index, StringBuffer s){
+		s.append(UtilityMethods.newLine() + "M_"+variable+"_"+value+" := Matrix([");
+		Set<Integer> encoded_values = new HashSet<Integer>();
+		for(int x = 0; x != alphabetSize;++x){
+			if(decode(x).get(index) == value){
+				encoded_values.add(x);
+			}
+		}
+		int[][] M = new int[Q][Q];
+		for(int p = 0 ; p < Q;++p){
+			TreeMap<Integer, List<Integer>> transitions_p = d.get(p);
+			for(int v : encoded_values){
+				if(transitions_p.containsKey(v)){
+					List<Integer> dest = transitions_p.get(v);
+					for(int q:dest){
+						M[p][q]++;
+					}
+				}
+			}
+			
+			s.append("[");
+			for(int q = 0; q < Q;++q){
+				s.append(M[p][q]);
+				if(q < (Q-1)){
+					s.append(",");
+				}
+			}
+			s.append("]");
+			if(p < (Q-1)){
+				s.append("," + UtilityMethods.newLine());
+			}
+		}
+		s.append("]);" + UtilityMethods.newLine());
+	}
+	private void write_initial_state_vector(StringBuffer s){
+		s.append("# The row vector u denotes the indicator vector of the (singleton)" + UtilityMethods.newLine());
+		s.append("# set of initial states." + UtilityMethods.newLine());
+		s.append("u := Vector[row]([");
+		for(int q = 0 ; q != Q; ++q){
+			if(q == q0){
+				s.append("1");
+			}
+			else{
+				s.append("0");
+			}
+			if(q < (Q-1)){
+				s.append(",");
+			}
+		}
+		s.append("]);" + UtilityMethods.newLine());
+	}
+	
+	private void write_final_states_vector(StringBuffer s){
+		s.append(UtilityMethods.newLine()+"# The column vector v denotes the indicator vector of the" + UtilityMethods.newLine());
+		s.append("# set of final states." + UtilityMethods.newLine());
+		s.append("v := Vector[column]([");
+		for(int q = 0; q != Q; ++q){
+			if(O.get(q) != 0){
+				s.append("1");
+			}
+			else{
+				s.append("0");
+			}
+			if(q < (Q-1)){
+				s.append(",");
+			}
+		}
+		s.append("]);" + UtilityMethods.newLine());
+	}
+
+	/**
+	 * We can choose to do Valmari or Hopcroft.
+	 * @throws Exception
+	 */
+	private void minimize(boolean print, String prefix,StringBuffer log)throws Exception{
+		long timeBefore = System.currentTimeMillis();
+		if(print){
+			String msg = prefix + "minimizing:" + Q + " states";
+			log.append(msg + UtilityMethods.newLine());
+			System.out.println(msg);
+		}
+		minimize_valmari(print,prefix+" ",log);
+		//minimize_hopcroft();
+		
+		long timeAfter = System.currentTimeMillis();
+		if(print){
+			String msg = prefix + "minimized:" + Q + " states - "+(timeAfter-timeBefore)+"ms";
+			log.append(msg + UtilityMethods.newLine());
+			System.out.println(msg);
+		}
+	}
 	/**
 	 * Uses the Hopcroft minimization algorithm of the package dk.brics.automaton to minimize this automaton.
 	 */
-	private void minimize()throws Exception{
+	private void minimize_hopcroft()throws Exception{
 		dk.brics.automaton.Automaton M = to_dk_bricks_automaton();
 		if(M.isDeterministic()){
 			M.minimize();
@@ -1111,8 +1584,10 @@ public class Automaton {
 		 * Automata.Automaton to dk.bricks.automaton.Automata we've got to make sure, the input alphabet is less than
 		 * size of char which 2^16 - 1
 		 */
-		if(alphabetSize > ((1<<Character.SIZE) -1))
+		if(alphabetSize > ((1<<Character.SIZE) -1)){
+			//System.out.println("Character size: " + );
 			throw new Exception("size of input alphabet exceeds the limit of " + ((1<<Character.SIZE) -1));
+		}
 		boolean deterministic = true;
 		List<dk.brics.automaton.State> setOfStates = new ArrayList<>();
 		for(int q = 0 ; q < Q;q++){
@@ -1445,7 +1920,13 @@ public class Automaton {
 		}
 		return to_dk_bricks_automaton().isEmpty();
 	}
-	private void subsetConstruction(HashSet<Integer> initial_state)throws Exception{
+	private void subsetConstruction(HashSet<Integer> initial_state,boolean print, String prefix, StringBuffer log)throws Exception{
+		long timeBefore = System.currentTimeMillis();
+		if(print){
+			String msg = prefix + "determinizing:" + Q + " states";
+			log.append(msg + UtilityMethods.newLine());
+			System.out.println(msg);
+		}
 		int number_of_states = 0,current_state = 0;
 		Hashtable<HashSet<Integer>,Integer> statesHash = new Hashtable<HashSet<Integer>,Integer>();
 		List<HashSet<Integer>> statesList = new ArrayList<HashSet<Integer>>();
@@ -1503,9 +1984,21 @@ public class Automaton {
 			}
 		}
 		O = newO;
+		long timeAfter = System.currentTimeMillis();
+		if(print){
+			String msg = prefix + "determinized:" + Q + " states - "+(timeAfter-timeBefore)+"ms";
+			log.append(msg + UtilityMethods.newLine());
+			System.out.println(msg);
+		}
 	}
-	private void fixLeadingZerosProblem()throws Exception{
+	private void fixLeadingZerosProblem(boolean print, String prefix,StringBuffer log)throws Exception{
 		if(TRUE_FALSE_AUTOMATON)return;
+		long timeBefore = System.currentTimeMillis();
+		if(print){
+			String msg = prefix + "fixing leading zeros:" + Q + " states";
+			log.append(msg + UtilityMethods.newLine());
+			System.out.println(msg);
+		}
 		canonized = false;
 		List<Integer> ZERO = new ArrayList<Integer>();//all zero input
 		for(List<Integer> i:A)ZERO.add(i.indexOf(0));
@@ -1518,16 +2011,27 @@ public class Automaton {
 		}
 		
 		HashSet<Integer> initial_state = zeroReachableStates();
-		subsetConstruction(initial_state);
-		minimize();
+		subsetConstruction(initial_state,print,prefix+" ",log);
+		minimize(print, prefix+" ", log);
+		long timeAfter = System.currentTimeMillis();
+		if(print){
+			String msg = prefix + "fixed leading zeros:" + Q + " states - "+(timeAfter-timeBefore)+"ms";
+			log.append(msg + UtilityMethods.newLine());
+			System.out.println(msg);
+		}
 	}
-	private void fixTrailingZerosProblem() throws Exception{
+	private void fixTrailingZerosProblem(boolean print, String prefix,StringBuffer log) throws Exception{
+		long timeBefore = System.currentTimeMillis();
+		if(print){
+			String msg = prefix + "fixing trailing zeros:" + Q + " states";
+			log.append(msg + UtilityMethods.newLine());
+			System.out.println(msg);
+		}
 		canonized = false;
 		Set<Integer> newFinalStates;// = statesReachableFromFinalStatesByZeros();
 		newFinalStates = statesReachableToFinalStatesByZeros();
 		List<Integer> ZERO = new ArrayList<Integer>();//all zero input
 		for(List<Integer> i:A)ZERO.add(i.indexOf(0));
-		int zero = encode(ZERO);
 		for(int q:newFinalStates){
 			O.set(q, 1);
 			/*if(!d.get(q).containsKey(zero)){
@@ -1537,7 +2041,14 @@ public class Automaton {
 			}*/
 		}
 
-		minimize();
+		minimize(print,prefix+" ",log);
+		
+		long timeAfter = System.currentTimeMillis();
+		if(print){
+			String msg = prefix + "fixed trailing zeros:" + Q + " states - "+(timeAfter-timeBefore)+"ms";
+			log.append(msg + UtilityMethods.newLine());
+			System.out.println(msg);
+		}
 	}
 	/**Returns the set of states reachable from the initial state by reading 0* 
 	*/
