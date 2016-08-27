@@ -28,6 +28,7 @@ import java.util.List;
 public class UtilityMethods {
 	static String dir = "";
 	static String ADDRESS_FOR_COMMAND_FILES = "Command Files/";
+	static String ADDRESS_FOR_MACRO_LIBRARY = "Macro Library/";
 	static String ADDRESS_FOR_AUTOMATA_LIBRARY = "Automata Library/";
 	static String ADDRESS_FOR_WORDS_LIBRARY = "Word Automata Library/";
 	static String ADDRESS_FOR_RESULT = "Result/";
@@ -40,6 +41,7 @@ public class UtilityMethods {
 	}
 	public static String get_address_for_command_files(){return dir+ADDRESS_FOR_COMMAND_FILES;}
 	public static String get_address_for_automata_library(){return dir+ADDRESS_FOR_AUTOMATA_LIBRARY;}
+	public static String get_address_for_macro_library(){return dir+ADDRESS_FOR_MACRO_LIBRARY;}
 	public static String get_address_for_result(){return dir+ADDRESS_FOR_RESULT;}
 	public static String get_address_for_custom_bases(){return dir+ADDRESS_FOR_CUSTOM_BASES;}
 	public static String get_address_for_words_library(){return dir+ADDRESS_FOR_WORDS_LIBRARY;}

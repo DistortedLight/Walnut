@@ -17,6 +17,10 @@
 */
 
 package Main;
+import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -52,6 +56,7 @@ public class Predicate {
 	Matcher MATCHER_FOR_NUMBER_SYSTEM;
 	Matcher MATCHER_FOR_WORD;
 	Matcher MATCHER_FOR_FUNCTION;
+	Matcher MATCHER_FOR_MACRO;
 	Matcher MATCHER_FOR_VARIABLE;
 	Matcher MATCHER_FOR_NUMBER_LITERAL;
 	Matcher MATCHER_FOR_ALPHABET_LETTER;
@@ -70,6 +75,7 @@ public class Predicate {
 	static String REGEXP_FOR_NUMBER_SYSTEM = "\\G\\s*\\?(((msd|lsd)_(\\d+|\\w+))|((msd|lsd)(\\d+|\\w+))|(msd|lsd)|(\\d+|\\w+))";
 	static String REGEXP_FOR_WORD = "\\G\\s*([a-zA-Z&&[^AE]]\\w*)\\s*\\[";	
 	static String REGEXP_FOR_FUNCTION = "\\G\\s*\\$([a-zA-Z&&[^AE]]\\w*)\\s*\\(";	
+	static String REGEXP_FOR_MACRO = "\\G(\\s*)\\#([a-zA-Z&&[^AE]]\\w*)\\s*\\(";	
 	static String REGEXP_FOR_VARIABLE = "\\G\\s*([a-zA-Z&&[^AE]]\\w*)";
 	static String REGEXP_FOR_NUMBER_LITERAL = "\\G\\s*(\\d+)";
 	static String REGEXP_FOR_ALPHABET_LETTER = "\\G\\s*@(\\s*(\\+|\\-)?\\s*\\d+)";
@@ -83,6 +89,7 @@ public class Predicate {
 	static Pattern PATTERN_FOR_NUMBER_SYSTEM = Pattern.compile(REGEXP_FOR_NUMBER_SYSTEM);
 	static Pattern PATTERN_FOR_WORD = Pattern.compile(REGEXP_FOR_WORD);
 	static Pattern PATTERN_FOR_FUNCTION = Pattern.compile(REGEXP_FOR_FUNCTION);
+	static Pattern PATTERN_FOR_MACRO = Pattern.compile(REGEXP_FOR_MACRO);
 	static Pattern PATTERN_FOR_VARIABLE = Pattern.compile(REGEXP_FOR_VARIABLE);
 	static Pattern PATTERN_FOR_NUMBER_LITERAL = Pattern.compile(REGEXP_FOR_NUMBER_LITERAL);
 	static Pattern PATTERN_FOR_ALPHABET_LETTER = Pattern.compile(REGEXP_FOR_ALPHABET_LETTER);
@@ -96,14 +103,7 @@ public class Predicate {
 	public Predicate(String predicate,int startingPosition) throws Exception{
 		this("msd_2",predicate,startingPosition);
 	}
-	public Predicate(String default_number_system,String predicate,int real_starting_position) throws Exception{
-		operator_Stack = new Stack<Operator>();
-		postOrder = new ArrayList<Token>();
-		this.real_starting_position = real_starting_position;
-		this.predicate = predicate;
-		this.default_number_system = default_number_system;
-		if(predicate.matches("^\\s*$"))return;
-		
+	private void initialize_matchers(){
 		MATCHER_FOR_LOGICAL_OPERATORS = PATTERN_FOR_LOGICAL_OPERATORS.matcher(predicate);
 		MATCHER_FOR_LIST_OF_QUANTIFIED_VARIABLES = PATTERN_FOR_LIST_OF_QUANTIFIED_VARIABLES.matcher(predicate);
 		MATCHER_FOR_RELATIONAL_OPERATORS = PATTERN_FOR_RELATIONAL_OPERATORS.matcher(predicate);
@@ -111,12 +111,22 @@ public class Predicate {
 		MATCHER_FOR_NUMBER_SYSTEM = PATTERN_FOR_NUMBER_SYSTEM.matcher(predicate);
 		MATCHER_FOR_WORD = PATTERN_FOR_WORD.matcher(predicate);
 		MATCHER_FOR_FUNCTION = PATTERN_FOR_FUNCTION.matcher(predicate);
+		MATCHER_FOR_MACRO = PATTERN_FOR_MACRO.matcher(predicate);
 		MATCHER_FOR_VARIABLE = PATTERN_FOR_VARIABLE.matcher(predicate);
 		MATCHER_FOR_NUMBER_LITERAL = PATTERN_FOR_NUMBER_LITERAL.matcher(predicate);
 		MATCHER_FOR_ALPHABET_LETTER = PATTERN_FOR_ALPHABET_LETTER.matcher(predicate);
 		MATCHER_FOR_LEFT_PARENTHESIS = PATTERN_FOR_LEFT_PARENTHESIS.matcher(predicate);
 		MATCHER_FOR_RIGHT_PARENTHESIS = PATTERN_FOR_RIGHT_PARENTHESIS.matcher(predicate);
 		MATCHER_FOR_WHITESPACE = PATTERN_FOR_WHITESPACE.matcher(predicate);
+	}
+	public Predicate(String default_number_system,String predicate,int real_starting_position) throws Exception{
+		operator_Stack = new Stack<Operator>();
+		postOrder = new ArrayList<Token>();
+		this.real_starting_position = real_starting_position;
+		this.predicate = predicate;
+		this.default_number_system = default_number_system;
+		if(predicate.matches("^\\s*$"))return;
+		initialize_matchers();
 		tokenize_and_compute_post_order();
 	}
 	private void tokenize_and_compute_post_order() throws Exception{
@@ -170,6 +180,10 @@ public class Predicate {
 				if(!lastTokenWasOperator)throw new Exception("an operator is missing: char at " + (real_starting_position+index));
 				lastTokenWasOperator = false;
 				index = put_function(current_number_system);
+			}
+			else if(MATCHER_FOR_MACRO.find(index)){
+				if(!lastTokenWasOperator)throw new Exception("an operator is missing: char at " + (real_starting_position+index));
+				index = put_macro();
 			}
 			else if(MATCHER_FOR_VARIABLE.find(index)){
 				if(!lastTokenWasOperator)throw new Exception("an operator is missing: char at " + (real_starting_position+index));
@@ -325,8 +339,8 @@ public class Predicate {
 		int startingPosition = i;
 		while(i < predicate.length()){
 			char ch = predicate.charAt(i);
-			if(ch == '$'){
-				throw new Exception("a function cannot be called from inside another function's argument list: char at " + (real_starting_position+i));
+			if(ch == '#' || ch == '$'){
+				throw new Exception("a function/macro cannot be called from inside another function/macro's argument list: char at " + (real_starting_position+i));
 			}
 			if(ch == ')'){
 				if(parenthesis_Stack.isEmpty())throw new Exception("unbalanced parenthesis: char at " + (real_starting_position + i));
@@ -364,6 +378,65 @@ public class Predicate {
 		Function f = new Function(real_starting_position + matcher.start(1), matcher.group(1), A, arguments.size());
 		f.put(postOrder);
 		return i+1;
+	}
+	
+	private int put_macro()throws Exception{		
+		Matcher matcher = MATCHER_FOR_MACRO;
+		
+		String macro = "";
+		try{
+			BufferedReader in = 
+					new BufferedReader(
+							new InputStreamReader(
+									new FileInputStream(
+											UtilityMethods.get_address_for_macro_library()+matcher.group(2)+".txt"), "utf-8"));
+			String line;
+			while((line = in.readLine())!= null){
+				macro += line;
+			}
+		}
+		catch (IOException e) {
+			e.printStackTrace();
+			throw new Exception("macro does not exist: " + matcher.group(2));
+		}
+		Stack<Character> parenthesis_Stack = new Stack<Character>();
+		parenthesis_Stack.push('(');
+		int i = matcher.end();
+		List<String> arguments = new ArrayList<String>();
+		StringBuffer buf = new StringBuffer();
+		while(i < predicate.length()){
+			char ch = predicate.charAt(i);
+			if(ch == '#' || ch == '$'){
+				throw new Exception("a function/macro cannot be called from inside another function/macro's argument list: char at " + (real_starting_position+i));
+			}
+			if(ch == ')'){
+				if(parenthesis_Stack.isEmpty())throw new Exception("unbalanced parenthesis: char at " + (real_starting_position + i));
+				parenthesis_Stack.pop();
+				if(parenthesis_Stack.isEmpty()){
+					arguments.add(buf.toString());
+					break;
+				}
+				buf.append(')');
+			}
+			else if(ch == ','){
+				if(parenthesis_Stack.size()!=1)throw new Exception("unbalanced parenthesis: char at " + (real_starting_position + i));
+				arguments.add(buf.toString());
+				buf = new StringBuffer();
+			}
+			else{
+				buf.append(ch);
+				if(ch == '('){	
+					parenthesis_Stack.push('(');
+				}
+			}
+			i++;
+		}
+		for(int arg_num = arguments.size()-1;arg_num >= 0;arg_num--){
+			macro = macro.replaceAll("%"+arg_num, arguments.get(arg_num));
+		}
+		predicate = predicate.substring(0, matcher.start()) + matcher.group(1) + macro + predicate.substring(i+1);
+		initialize_matchers();
+		return matcher.start();
 	}
 	
 	public List<Token> get_postOrder(){

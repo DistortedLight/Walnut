@@ -79,8 +79,10 @@ public class IntegrationTest {
 			prover.dispatchForIntegrationTest("load paperfolding_trapezoidal_tests.txt;");
 			prover.dispatchForIntegrationTest("load period_doubling_tests.txt;");
 			prover.dispatchForIntegrationTest("load fibonacci_tests.txt;");
-
 			
+			prover.dispatchForIntegrationTest("macro palindrome \"?%0 Ak (k<n) => %1[i+k] = %1[i+n-1-k]\";");
+			//prover.dispatchForIntegrationTest("macro factoreq \"%0 Ak (%4<n) => %1[%2+k]=%1[%3+k]\"");
+			prover.dispatchForIntegrationTest("macro border \"?%0 m>=1 & m<=n & $%1_factoreq(i,i+n-m,m)\";");
 		} catch (FileNotFoundException e2) {
 			e2.printStackTrace();
 		} catch (UnsupportedEncodingException e2) {
@@ -512,9 +514,21 @@ public class IntegrationTest {
 		L.add("def test378 n \"?msd_fib (j >= 1) & (i+2*j <= n) & (Ak k<j => F[i+k]=F[i+j+k])\"::");
 		L.add("def test379 n \"?msd_fib ($fibmr(i,n,n+1) & ~$fibmr(i,n-1,n))\"::");
 		L.add("eval test380 23 \"n23 = 10\"::");// error: invalid use of eval/def command: eval test380 23 "n23 = 10"::
-		L.add("eval test381 n23 \"En23 n23 = 10\"::");
-		L.add("eval test382 n23 \"En23 n23 = 10 & i = 12\"::");
+		L.add("eval test381 n23 \"En23 n23 = 10\"::");// error
+		L.add("eval test382 n23 \"En23 n23 = 10 & i = 12\"::");//error
 		L.add("eval test383 n23 \"Ei n23 = 10 & i = 12\"::");
+		
+		// test macro
+		L.add("eval test384 \"#palindrome(msd_2,T)\";");
+		L.add("eval test385 \"#palindrome(msd_fib,F)\";");
+		L.add("eval test386 \"#palindrome(msd_2,RS)\";");
+		L.add("eval test387 \"#palindrome(lsd_2,RS)\";");
+		L.add("eval test388 \"#palindrome(msd_2,P)\";");
+		L.add("eval test389 \"#border(msd_2,thue)\";");		
+		L.add("eval test391 \"#border(msd_fib,fibonacci)\";");		
+		L.add("eval test392 \"#border(msd_2,rudin)\";");		
+		L.add("eval test393 \"#border(msd_2,paperfolding)\";");		
+
 		
 	}
 	public void runPerformanceTest(String name,int numberOfRuns) throws Exception{

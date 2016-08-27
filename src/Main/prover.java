@@ -18,9 +18,12 @@
 
 package Main;
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -37,7 +40,7 @@ import Automata.NumberSystem;
  */
 public class prover {
 
-	static String REGEXP_FOR_THE_LIST_OF_COMMANDS = "(eval|def|reg|load|exit)";
+	static String REGEXP_FOR_THE_LIST_OF_COMMANDS = "(eval|def|macro|reg|load|exit)";
 	static String REGEXP_FOR_EMPTY_COMMAND = "^\\s*(;|::|:)\\s*$";
 	/**
 	 * the high-level scheme of a command is a name followed by some arguments and ending in either ; : or ::
@@ -63,6 +66,9 @@ public class prover {
 	static String REXEXP_FOR_A_FREE_VARIABLE_IN_eval_def_COMMANDS = "[a-zA-Z]\\w*";
 	static Pattern PATTERN_FOR_A_FREE_VARIABLE_IN_eval_def_COMMANDS = Pattern.compile(REXEXP_FOR_A_FREE_VARIABLE_IN_eval_def_COMMANDS);
 	
+	static String REGEXP_FOR_macro_COMMAND = "^\\s*macro\\s+([a-zA-Z]\\w*)\\s+\"(.*)\"\\s*(;|::|:)\\s*$";
+	static int M_NAME = 1,M_DEFINITION = 2; 
+	static Pattern PATTERN_FOR_macro_COMMAND = Pattern.compile(REGEXP_FOR_macro_COMMAND);
 	
 	static String REGEXP_FOR_reg_COMMAND = "^\\s*(reg)\\s+([a-zA-Z]\\w*)\\s+((((msd|lsd)_(\\d+|\\w+))|((msd|lsd)(\\d+|\\w+))|(msd|lsd)|(\\d+|\\w+))|(\\{(\\s*(\\+|\\-)?\\s*\\d+)(\\s*,\\s*(\\+|\\-)?\\s*\\d+)*\\s*\\}))\\s+\"(.*)\"\\s*(;|::|:)\\s*$";
 	/**
@@ -86,10 +92,10 @@ public class prover {
 	 */	
 	public static void main(String[] args) throws Exception {
 		UtilityMethods.setPaths();
-		//IntegrationTest IT = new IntegrationTest(false);
+		//IntegrationTest IT = new IntegrationTest(true);
 		//IT.runPerformanceTest("Walnut with Valmari without refactoring", 5);
 		//IT.runPerformanceTest("Walnut with dk.bricks", 5);
-		//IT.runTestCases();
+		//IT.runTestCases(384);
 		//IT.createTestCases();
 		run(args);
 	}
@@ -183,6 +189,7 @@ public class prover {
 			if(!loadCommand(s))return false;
 		}
 		else if(commandName.equals("eval") || commandName.equals("def"))eval_def_commands(s);
+		else if(commandName.equals("macro"))macro_command(s);
 		else if(commandName.equals("reg"))regCommand(s);
 		else throw new Exception("no such command exists");
 		return true;
@@ -206,6 +213,7 @@ public class prover {
 			if(!loadCommand(s))return null;
 		}
 		else if(commandName.equals("eval") || commandName.equals("def"))return eval_def_commands(s);
+		else if(commandName.equals("macro"))return macro_command(s);
 		else if(commandName.equals("reg"))return regCommand(s);
 		else throw new Exception("no such command exists");
 		return null;
@@ -218,8 +226,6 @@ public class prover {
 	 * @return
 	 * @throws Exception 
 	 */
-
-
 	public static boolean loadCommand(String s) throws Exception{
 		
 		Matcher m = PATTERN_FOR_load_COMMAND.matcher(s);
@@ -261,6 +267,24 @@ public class prover {
 			c.write(UtilityMethods.get_address_for_automata_library()+m.group(ED_NAME)+".txt");	
 		M = c.getTheFinalResult();
 		return new TestCase(s, M, "", c.mpl, printDetails ? c.log_details.toString() : "");
+	}
+	public static TestCase macro_command(String s) throws Exception{
+		Matcher m = PATTERN_FOR_macro_COMMAND.matcher(s);
+		if(!m.find())throw new Exception("invalid use of macro command");
+		
+		try{
+			BufferedWriter out = 
+					new BufferedWriter(
+							new OutputStreamWriter(
+									new FileOutputStream(
+											UtilityMethods.get_address_for_macro_library()+m.group(M_NAME)+".txt"), "utf-8"));
+			out.write(m.group(M_DEFINITION));
+			out.close();
+		}
+		catch (Exception o){		
+			System.out.println("Could not write the macro " + m.group(M_NAME));
+		}
+		return null;
 	}
 	public static TestCase regCommand(String s) throws Exception{
 		Matcher m = PATTERN_FOR_reg_COMMAND.matcher(s);
