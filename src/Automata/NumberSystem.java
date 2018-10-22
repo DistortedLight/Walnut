@@ -1,5 +1,5 @@
 /*	 Copyright 2016 Hamoon Mousavi
- * 
+ *
  * 	 This file is part of Walnut.
  *
  *   Walnut is free software: you can redistribute it and/or modify
@@ -33,29 +33,29 @@ import Main.UtilityMethods;
  * - a rule for addition <br>
  * - a rule for comparison, and by comparison we mean equality and less than testing.<br>
  * - a flag that determines whether numbers are represented in most significant digit order or least significant digit.<br>
- * For example msd_3 is a number system. It is the number system in which <br> 
+ * For example msd_3 is a number system. It is the number system in which <br>
  * - numbers are represented in base 3 in most significant digit first. Hence the alphabet is {0,1,2}.<br>
- * - the rule for addition, is a simple two states automaton, that gets 3-tuples (a,b,c) in base three and 
+ * - the rule for addition, is a simple two states automaton, that gets 3-tuples (a,b,c) in base three and
  * accepts iff c=a+b.<br>
  * - the rule for comparison is a simple two state automaton, that gets 2-tuples (a,b) in base three and accepts
  *  iff a < b. <br>
  * - we already mentioned that numbers are in most significant digit first (msd) in this number system. <br>
- * 
- * We mandate that 0 and 1 belong to the alphabet of every number systems. In addition, we require that 
- * 0* represent the additive identity in all number systems. We also mandate that either 
+ *
+ * We mandate that 0 and 1 belong to the alphabet of every number systems. In addition, we require that
+ * 0* represent the additive identity in all number systems. We also mandate that either
  * 0*1 or 10* (depending on msd/lsd) represent multiplicative
- * identity in all number systems.<br> 
- * 
+ * identity in all number systems.<br>
+ *
  * From here on by rule we mean a finite automaton.
- * If the users want to create a new number system, they, at least, have to provide the rule for addition 
- * (in the Custom Bases directory). 
+ * If the users want to create a new number system, they, at least, have to provide the rule for addition
+ * (in the Custom Bases directory).
  * They can further provide the rule for less than. If less than rule is not provided, we use the lexicographic ordering
  * on integers to create an automaton for less than testing. So for example if the alphabet is {-2,0,7} then in lexicographic order, we have -270 < 0-270-2.<br>
  * Rule for equality is always the rule for word equalities, i.e., two numbers are equal if the words representing
  * them are equal.<br>
  * Rules for base n already exist in the system for every n>1. However the user can override them. <br><br>
- * 
- * 
+ *
+ *
  * VERY IMPORTANT: ALL PRIVATE METHODS WHICH RETURN AUTOMATON MUST BE USED WITH CAUTION. THEIR RETURNED AUTOMATON
  * SHOULD NOT BE ALTERED. IF YOU WANT TO ALTER THEIR RETURNED VALUE, THEN YOU HAVE GOT TO MAKE A CLONE AND DO THE
  * MODIFICATION ON THE CLONE.
@@ -109,13 +109,13 @@ public class NumberSystem {
 		 * For example lsd_2 is the complement of msd_2.
 		 */
 		String complementName = (is_msd ? "lsd":"msd")+"_" + base;
-		String addressForTheSetOfAllRepresentations = UtilityMethods.get_address_for_custom_bases()+complementName+".txt";
-		String complement_addressForTheSetOfAllRepresentations = UtilityMethods.get_address_for_custom_bases()+name+".txt";
+		String addressForTheSetOfAllRepresentations = UtilityMethods.get_address_for_custom_bases()+name+".txt";
+		String complement_addressForTheSetOfAllRepresentations = UtilityMethods.get_address_for_custom_bases()+complementName+".txt";
 		String addressForAddition = UtilityMethods.get_address_for_custom_bases()+name+"_addition.txt";
 		String complement_addressForAddition = UtilityMethods.get_address_for_custom_bases()+complementName+"_addition.txt";
 		String addressForLessThan = UtilityMethods.get_address_for_custom_bases()+name+"_less_than.txt";
 		String complement_addressForLessThan = UtilityMethods.get_address_for_custom_bases()+complementName+"_less_than.txt";
-		
+
 		//addition
 		if(new File(addressForAddition).isFile())
 			addition = new Automaton(addressForAddition);
@@ -125,7 +125,7 @@ public class NumberSystem {
 		}
 		else{
 			if(UtilityMethods.isNumber(base) && Integer.parseInt(base) > 1) base_n_addition(Integer.parseInt(base));
-			else throw new Exception("number system " + name + " is not defined");	
+			else throw new Exception("number system " + name + " is not defined");
 		}
 		/**
 		 * The alphabet of all inputs of addition automaton must be equal. It must contain 0 and 1.
@@ -138,17 +138,17 @@ public class NumberSystem {
 			throw new Exception("the input alphabet of addition automaton must contain 0: base "+name);
 		if(!addition.A.get(0).contains(1))
 			throw new Exception("the input alphabet of addition automaton must contain 1: base "+name);
-		
+
 		for(int i =1; i < addition.A.size();i++){
 			if(!UtilityMethods.areEqual(addition.A.get(i),addition.A.get(0)))
 				throw new Exception("all 3 inputs of the addition automaton must have the same alphabet: base " + name);
-			
+
 		}
 		for(int i = 0; i < addition.A.size();i++){
 			addition.NS.set(i, this);
 		}
-			
-		
+
+
 		//lessThan
 		if(new File(addressForLessThan).isFile()){
 			lessThan = new Automaton(addressForLessThan);
@@ -170,10 +170,10 @@ public class NumberSystem {
 				throw new Exception("inputs of the less_than automaton must have the same alphabet as the alphabet of inputs of addition automaton: base " + name);
 			lessThan.NS.set(i,this);
 		}
-		
+
 		setEquality(addition.A.get(0));
-		
-		
+
+
 		//the set of all representations
 		if(new File(addressForTheSetOfAllRepresentations).isFile())
 			allRepresentations = new Automaton(addressForTheSetOfAllRepresentations);
@@ -216,7 +216,7 @@ public class NumberSystem {
 	 * Initializes lessThan to lexicographic lessThan. lessThan has two inputs, and it accepts iff the first
 	 * one is less than the second one. So the input is ordered!
 	 * @param alphabet
-	 * @throws Exception 
+	 * @throws Exception
 	 */
 	private void lexicographicLessThan(List<Integer> alphabet) throws Exception{
 		alphabet = new ArrayList<Integer>(alphabet);
@@ -257,7 +257,7 @@ public class NumberSystem {
 	 * Initializes addition to base n addition. addition has three inputs, and it accepts
 	 *  iff the third is the sum of the first two. So the input is ordered!
 	 * @param n
-	 * @throws Exception 
+	 * @throws Exception
 	 */
 	private void base_n_addition(int n) throws Exception{
 		List<Integer> alphabet = new ArrayList<Integer>();
@@ -302,7 +302,7 @@ public class NumberSystem {
 			addition.reverse(false,null,null);
 	}
 	/**
-	 * 
+	 *
 	 * @param n
 	 * @return an automaton that accepts only n.
 	 * @throws Exception
@@ -324,9 +324,9 @@ public class NumberSystem {
 	 * @param b
 	 * @param comparisonOperator can be any of "<",">","<=",">=","=","!="
 	 * @return an Automaton with two inputs, with labels a and b. It accepts iff a comparisonOperator b.
-	 * Note that the order of inputs, in the resulting automaton, is not guaranteed to be either (a,b) or (b,a). 
+	 * Note that the order of inputs, in the resulting automaton, is not guaranteed to be either (a,b) or (b,a).
 	 * So the input is not ordered!
-	 * @throws Exception 
+	 * @throws Exception
 	 */
 	public Automaton comparison(String a,String b,String comparisonOperator) throws Exception{
 		Automaton M;
@@ -363,12 +363,12 @@ public class NumberSystem {
 		}
 		return M;
 	}
-	/** 
-	 * @param a 
+	/**
+	 * @param a
 	 * @param b a non negative integer
 	 * @param comparisonOperator can be any of "<",">","<=",">=","=","!="
 	 * @return an Automaton with single input, with label = [a]. It accepts iff a comparisonOperator b.
-	 * @throws Exception 
+	 * @throws Exception
 	 */
 	public Automaton comparison(String a,int b,String comparisonOperator) throws Exception{
 		if(b < 0)throw new Exception("negative constant " + b);
@@ -383,12 +383,12 @@ public class NumberSystem {
 		M.quantify(B,false,null,null);
 		return M;
 	}
-	/** 
+	/**
 	 * @param a a non negative integer
-	 * @param b 
+	 * @param b
 	 * @param comparisonOperator can be any of "<",">","<=",">=","=","!="
 	 * @return an Automaton with single input, with label = [b]. It accepts iff a comparisonOperator b.
-	 * @throws Exception 
+	 * @throws Exception
 	 */
 	public Automaton comparison(int a,String b,String comparisonOperator) throws Exception{
 		if(a < 0)throw new Exception("negative constant " + a);
@@ -404,7 +404,7 @@ public class NumberSystem {
 		}
 	}
 	/**
-	 * 
+	 *
 	 * @param a
 	 * @param b
 	 * @param c
@@ -413,7 +413,7 @@ public class NumberSystem {
 	 * Note that the order of inputs, in the resulting
 	 * automaton, is not guaranteed to be in any fixed order like (a,b,c) or (c,b,a) ...
 	 * So the input is not ordered!
-	 * @throws Exception 
+	 * @throws Exception
 	 */
 	public Automaton arithmetic(String a, String b, String c, String arithmeticOperator) throws Exception{
 		Automaton M = addition.clone();
@@ -421,14 +421,14 @@ public class NumberSystem {
 		case "+":M.bind(a,b,c);break;
 		case "-":M.bind(b,c,a);break;
 		case "*":throw new Exception("the operator * cannot be applied to two variables");
-		case "/":throw new Exception("the operator / cannot be applied to two variables");	
+		case "/":throw new Exception("the operator / cannot be applied to two variables");
 		default:
 			throw new Exception("undefined arithmetic operator");
 		}
 		return M;
 	}
 	/**
-	 * 
+	 *
 	 * @param a
 	 * @param b a non-negative integer
 	 * @param c
@@ -437,7 +437,7 @@ public class NumberSystem {
 	 * Note that the order of inputs, in the resulting
 	 * automaton, is not guaranteed to be in any fixed order like [a,c] or [c,a].
 	 * So the input is not ordered!
-	 * @throws Exception 
+	 * @throws Exception
 	 */
 	public Automaton arithmetic(String a, int b, String c,String arithmeticOperator) throws Exception{
 		if(b < 0)throw new Exception("negative constant " + b);
@@ -463,7 +463,7 @@ public class NumberSystem {
 		return M;
 	}
 	/**
-	 * 
+	 *
 	 * @param a a non-negative integer
 	 * @param b
 	 * @param c
@@ -472,8 +472,8 @@ public class NumberSystem {
 	 * Note that the order of inputs, in the resulting
 	 * automaton, is not guaranteed to be in any fixed order like [b,c] or [c,b].
 	 * So the input is not ordered!
-	 * @throws Exception 
-	 * 
+	 * @throws Exception
+	 *
 	 */
 	public Automaton arithmetic(int a,String b,String c,String arithmeticOperator) throws Exception{
 		if(a < 0)throw new Exception("negative constant " + a);
@@ -494,15 +494,15 @@ public class NumberSystem {
 		return M;
 	}
 	/**
-	 * 
+	 *
 	 * @param n
 	 * @return an Automaton with one input. It accepts when the input equals n.
-	 * @throws Exception 
+	 * @throws Exception
 	 */
 	private Automaton constant(int n) throws Exception{
 		if(n < 0)throw new Exception("constant cannot be negative");
 		if(constantsDynamicTable.containsKey(n))return constantsDynamicTable.get(n);
-		
+
 		if(n == 0){
 			Automaton zero = make_zero();
 			return zero;
@@ -513,7 +513,7 @@ public class NumberSystem {
 		}
 		String a = "a",b = "b",c = "c";
 		Automaton M = get(n/2);
-		
+
 		M.bind(a);
 		Automaton N = get(n/2 + (n%2 == 0 ? 0:1));
 		N.bind(b);
@@ -532,7 +532,7 @@ public class NumberSystem {
 	 */
 	private Automaton multiplication(int n)throws Exception{
 		if(n < 0)throw new Exception("constant cannot be negative");
-		if(n == 0)throw new Exception("multiplication(0)");		
+		if(n == 0)throw new Exception("multiplication(0)");
 		if(multiplicationsDynamicTable.containsKey(n))return multiplicationsDynamicTable.get(n);
 		//note that the case of n==0 is handled in Computer class
 		if(n == 1){
@@ -545,14 +545,14 @@ public class NumberSystem {
 		M.bind(a,b);
 		//c = ceil(n/2)*a
 		Automaton N = getMultiplication(n/2 + (n%2 == 0 ? 0:1));
-		N.bind(a,c);		
+		N.bind(a,c);
 		Automaton P = arithmetic(b, c, d, "+");
 		P = P.and(M,false,null,null);
 		P = P.and(N,false,null,null);
 		P.quantify(b,c,is_msd,false,null,null);
 		P.sortLabel();
 		multiplicationsDynamicTable.put(n, P);
-		return P;	
+		return P;
 	}
 	/**
 	 * The returned automaton has two inputs, and it accepts iff the second is one nth of the first. So the input is ordered!
@@ -576,7 +576,7 @@ public class NumberSystem {
 		divisionsDynamicTable.put(n, R);
 		return R;
 	}
-	
+
 	private Automaton make_zero()throws Exception{
 		List<Integer> alph = new ArrayList<Integer>();
 		alph.add(0);
@@ -591,7 +591,7 @@ public class NumberSystem {
 		constantsDynamicTable.put(0, M);
 		return M;
 	}
-	
+
 	private Automaton make_one() throws Exception{
 		List<Integer> alph = new ArrayList<Integer>();
 		alph.add(0);
@@ -599,7 +599,7 @@ public class NumberSystem {
 		Automaton M = new Automaton("0*",alph,this);
 		if(is_msd)
 			M = new Automaton("0*1",alph,this);
-		else 
+		else
 			M = new Automaton("10*",alph,this);
 		M.A = new ArrayList<List<Integer>>();
 		M.A.add(new ArrayList<Integer>(addition.A.get(0)));
@@ -610,5 +610,5 @@ public class NumberSystem {
 		constantsDynamicTable.put(1, M);
 		return M;
 	}
-	
+
 }
