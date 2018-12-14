@@ -1,0 +1,17 @@
+def pell_successor "?msd_pell x < y & (Az (z <= x) | (z >= y))";
+
+eval base_proof "?msd_pell Ax,z ((x + 0 = z) <=> (x = z))";
+
+eval inductive_proof "?msd_pell Ax,y,z,u,v ($pell_successor(y, u) & $pell_successor(z, v)) => ((x + y = z) <=> (x + u = v))";
+
+
+eval fac_low_exponent "?msd_pell Ei,p,n (p >= 1) & (2*n <= 3*p) & (Aj (j + p < n) => X5[i + j] = X5[i + j + p])";
+
+eval fac_ex_exponent "?msd_pell Ei,p,n (p >= 1) & (2*n = 3*p) & (Aj (j + p < n) => X5[i + j] = X5[i + j + p])";
+
+eval fac_high_exponent "?msd_pell Ei,p,n (p >= 1) & (2*n > 3*p) & (Aj (j + p < n) => X5[i + j] = X5[i + j + p])";
+
+
+eval fac_cex5 "?msd_pell En (p >= 1) & (2*n = 3*p) & (Aj (j + p < n) => X5[i + j] = X5[i + j + p])";
+
+eval almost_ce_period "?msd_pell Ei (p > 10) & (2*n + 4 >= 3*p) & (Aj (j + p < n) => X5[i + j] = X5[i + j + p])";
