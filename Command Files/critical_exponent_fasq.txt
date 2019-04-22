@@ -1,0 +1,14 @@
+// Showing that this word has only two antisquares.
+// This predicate produces an automaton that only accepts the integer 1.
+// This means that only antisquares of length 2 are present in the word (01, 10).
+eval antisq_lengths "?msd_fib Ei (p >= 1) & (Aj (j < p) => ~(FASQ[i + j] = FASQ[i + j + p]))":
+
+// To compute the critical exponent, we first gather the periods of all high-power repetitions
+// for which the exponent is >= 3.
+eval periods_of_high_powers "?msd_fib Ei (p >= 1) & (Aj (j <= 2*p) => FASQ[i + j] = FASQ[i + j + p])":
+
+reg pows msd_fib "0*10010*":
+
+def maximal_reps "?msd_fib Ei (Aj (j < n) => FASQ[i + j] = FASQ[i + j + p]) & (FASQ[i + n] != FASQ[i + n + p])":
+
+eval highest_powers "?msd_fib (p >= 1) & $pows(p) & $maximal_reps(n, p) & (Am $maximal_reps(m, p) => m <= n)":
