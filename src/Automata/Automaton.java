@@ -1,5 +1,5 @@
 /*	 Copyright 2016 Hamoon Mousavi
- * 
+ *
  * 	 This file is part of Walnut.
  *
  *   Walnut is free software: you can redistribute it and/or modify
@@ -69,24 +69,24 @@ import dk.brics.automaton.Transition;
  * We use this encoded numbers in our representation of automaton to refer to a particular input. For example
  * we might say on (2,1,3) we go from state 5 to state 0 by setting d.get(5) = (11,[5]). We'll see more on d (transition function)
  * -Now what about states? Q stores the number of states. For example when Q = 3, the set of states is {0,1,2}.
- * -Initial state: q0 is the initial state. For example we might have q0 = 1. 
+ * -Initial state: q0 is the initial state. For example we might have q0 = 1.
  * -Now field member O is an important one: O stores the output of an state. Now in the case of DFA/NFA, a value of non-zero
  * in O means a final state, and a value of zero means a non-final state. So for example we might have O = {1,-1,0} which means
  * that the first two states are final states. In the case of an automaton with output O simply represents output of an state.
- * Continuing with this example, in the case of automaton with output, 
- * the first state has output 1, the second has output -1, and the third one has output 0. As you 
+ * Continuing with this example, in the case of automaton with output,
+ * the first state has output 1, the second has output -1, and the third one has output 0. As you
  * have guessed the output alphabet can be any finite subset of integers. <br>
  * We might want to give labels to inputs. For example if we set label = ["x","y","z"], the label of the first input is "x".
  * Then in future, we can refer to this first input by the label "x". <br>
  * -The transition function is d which is a TreeMap<integer,List<Integer>> for each state. For example we might have
  * d.get(1) = {(0,[0]),(1,[1,2]),...} which means that state 1 goes to state 0 on input 0, and goes to states 1 and 2 on 1,....
- *   
+ *
  * @author Hamoon
  *
  */
 public class Automaton {
 	/**
-	 * When TRUE_FALSE_AUTOMATON = false, it means that this automaton is 
+	 * When TRUE_FALSE_AUTOMATON = false, it means that this automaton is
 	 * an actual automaton and not one of the special automata: true or false
 	 * When TRUE_FALSE_AUTOMATON = true and TRUE_AUTOMATON = false then this is a false automaton.
 	 * When TRUE_FALSE_AUTOMATON = true and TRUE_AUTOMATON = true then this is a true automaton.
@@ -95,14 +95,14 @@ public class Automaton {
 	/**
 	 *  Input Alphabet.
 	 *  For example when A = [[-1,1],[2,3]], the first and the second inputs are over alphabets {-1,1} and {2,3} respectively.
-	 *  Remember that the input to an automaton is a tuple (a pair in this example). 
+	 *  Remember that the input to an automaton is a tuple (a pair in this example).
 	 *  For example a state might make a transition on input (1,3). Here the
 	 *  first input is 1 and the second input is 3.
 	 *  Also note that A is a list of sets, but for technical reasons, we just made it a list of lists. However,
 	 *  we have to make sure, at all times, that the inner lists of A don't contain repeated elements.
 	 */
-	List<List<Integer>> A; 
-	
+	List<List<Integer>> A;
+
 	/**
 	 * Alphabet Size. For example, if A = [[-1,1],[2,3]], then alphabetSize = 4 and if A = [[-1,1],[0,1,2]], then alphabetSize = 6
 	 */
@@ -118,23 +118,23 @@ public class Automaton {
 	 * We can decode, the number returned by encode(), and get x back using decode method.
 	 */
 	List<Integer> encoder;
-	
+
 	/**
 	 * Types of the inputs to this automaton.
-     * There are two possible types for inputs for an automaton:Type.arithmetic or Type.alphabetLetter. 
+     * There are two possible types for inputs for an automaton:Type.arithmetic or Type.alphabetLetter.
 	 * In other words, type of inputs to an automaton is either arithmetic or non-arithmetic.
 	 * For example we might have A = [[1,-1],[0,1,2],[0,-1]] and T = [Type.alphabetLetter, Type.arithmetic, Type.alphabetLetter]. So
 	 * the first and third inputs are non-arithmetic (and should not be treated as arithmetic).
-	 * This type is useful in type checking. So for example, we might have f(a,b+1,c+1), where f is the example automaton. Then this 
+	 * This type is useful in type checking. So for example, we might have f(a,b+1,c+1), where f is the example automaton. Then this
 	 * is a type error, because the third input to f is non-arithmetic, and hence we cannot have c+1 as our third argument.
-	 * It is very important to note that, an input of type arithmetic must always contain 0 and 1 in its alphabet. 
+	 * It is very important to note that, an input of type arithmetic must always contain 0 and 1 in its alphabet.
 	 */
 	public List<NumberSystem> NS;
 	/**Number of States. For example when Q = 3, the set of states is {0,1,2}*/
 	public int Q;
 	/**Initial State.*/
 	int q0;
-	/**State Outputs. In case of DFA/NFA accepting states have a nonzero integer as their output. 
+	/**State Outputs. In case of DFA/NFA accepting states have a nonzero integer as their output.
 	 * Rejecting states have output 0.
 	 * Example: O = [-1,2,...] then state 0 and 1 have outputs -1 and 2 respectively.*/
 	public List<Integer> O;
@@ -152,21 +152,21 @@ public class Automaton {
 	/** When true, labels are sorted lexicographically. It is used in sortLabel() method.*/
 	boolean labelSorted;
 	/**
-	 * Transition Function for This State. For example, when d[0] = [(0,[1]),(1,[2,3]),(2,[2]),(3,[4]),(4,[1]),(5,[0])] 
-	 * and alphabet A = [[0,1],[-1,2,3]] 
-	 * then from the state 0 on 
+	 * Transition Function for This State. For example, when d[0] = [(0,[1]),(1,[2,3]),(2,[2]),(3,[4]),(4,[1]),(5,[0])]
+	 * and alphabet A = [[0,1],[-1,2,3]]
+	 * then from the state 0 on
 	 * (0,-1) we go to 1
 	 * (0,2) we go to 2,3
 	 * (0,3) we go to 2
 	 * (1,-1) we go to 4
 	 * ...
 	 * So we store the encoded values of inputs in d, i.e., instead of saying on (0,-1) we go to state 1, we say on 0, we go
-	 * to state 1. 
+	 * to state 1.
 	 * Recall that (0,-1) represents 0 in mixed-radix base (1,2) and alphabet A. We have this mixed-radix base (1,2) stored as encoder in
 	 * our program, so for more information on how we compute it read the information on List<Integer> encoder field.
 	 */
 	List<TreeMap<Integer,List<Integer>>> d;
-	
+
 	/**
 	 * Valmari fields
 	 */
@@ -180,7 +180,7 @@ public class Automaton {
 	     ff;    // number of final states
 	Integer[] T,    // tails of transitions
 	  	  L,    // labels of transitions
-	  	  H;    // heads of transitions	
+	  	  H;    // heads of transitions
 
 	/* Adjacent transitions */
 	int[] _A, _F;
@@ -206,19 +206,19 @@ public class Automaton {
 		make_adjacent( T ); int i, j;
 		for( i = 0; i < rr; ++i ){
 			for( j = _F[B.E[i]]; j < _F[B.E[i] + 1]; ++j ){
-				reach( H[_A[j]] ); 
-			} 
+				reach( H[_A[j]] );
+			}
 		}
 		j = 0;
 		for( int t = 0; t < mm; ++t ){
 			if( B.L[T[t]] < rr ){
 				H[j] = H[t]; L[j] = L[t];
-		    	T[j] = T[t]; ++j; 
-		    } 
+		    	T[j] = T[t]; ++j;
+		    }
 		}
 		mm = j; B.P[0] = rr; rr = 0;
 	}
-	
+
 	/* Minimization algorithm */
 	void minimize_valmari(boolean print, String prefix,StringBuffer log) throws Exception{
 		HashSet<Integer> qqq = new HashSet<Integer>();
@@ -231,8 +231,8 @@ public class Automaton {
 		ArrayList<Integer> _H = new ArrayList<Integer>(),_L = new ArrayList<Integer>(),_T= new ArrayList<Integer>();
 		//System.out.println("-------------------------------------------");
 		for(int q = 0; q != d.size();++q){
-			for(int l : d.get(q).keySet()) { 
-				for(int p : d.get(q).get(l)) { 
+			for(int l : d.get(q).keySet()) {
+				for(int p : d.get(q).get(l)) {
 					mm++;
 					_H.add(p);
 					_T.add(q);
@@ -248,15 +248,15 @@ public class Automaton {
 		_T.toArray(T); _L.toArray(L);_H.toArray(H);
 	    B.init( nn );
 		_A = new int[ mm ]; _F = new int[ nn+1 ];
-		
+
 		  //reach( q0 ); rem_unreachable( T, H );
 		for( int q = 0; q < nn; ++q ){
-			if(O.get(q) != 0){ 
-				reach( q ); 
-			} 
+			if(O.get(q) != 0){
+				reach( q );
+			}
 		}
 		ff = rr; rem_unreachable( H, T );
-		
+
 		/* Make initial partition */
 		Partition.W = new int[ mm+1 ]; Partition.M = new int[ mm+1];
 		Partition.M[0] = ff;
@@ -269,7 +269,7 @@ public class Automaton {
 		        @Override
 		        public int compare(Integer a, Integer b)
 		        {
-	
+
 		            return L[a] - L[b];
 		        }
 		    });
@@ -278,9 +278,9 @@ public class Automaton {
 				int t = C.E[i];
 				if( L[t] != a ){
 					a = L[t]; C.P[C.z++] = i;
-					C.F[C.z] = i; Partition.M[C.z] = 0; 
+					C.F[C.z] = i; Partition.M[C.z] = 0;
 				}
-				C.S[t] = C.z; C.L[t] = i; 
+				C.S[t] = C.z; C.L[t] = i;
 			}
 			C.P[C.z++] = mm;
 		}
@@ -290,16 +290,16 @@ public class Automaton {
 		int b = 1, c = 0;
 		while( c < C.z ){
 			for(int i = C.F[c]; i < C.P[c]; ++i ){
-				B.mark( T[C.E[i]] ); 
+				B.mark( T[C.E[i]] );
 			}
 			B.split(); ++c;
 			while( b < B.z ){
 				for(int i = B.F[b]; i < B.P[b]; ++i ){
 					for(int j = _F[B.E[i]];j < _F[B.E[i]+1]; ++j){
-						C.mark( _A[j] ); 
-					} 
+						C.mark( _A[j] );
+					}
 				}
-				C.split(); ++b; 
+				C.split(); ++b;
 			}
 		}
 
@@ -310,12 +310,12 @@ public class Automaton {
 		for( int q = 0; q < B.z; ++q ){
 			if( B.F[q] < ff ){
 				O.add(1);
-			} 
+			}
 			else {
 				O.add(0);
 			}
 		}
-		
+
 		d = new ArrayList<TreeMap<Integer,List<Integer>>>(Q);
 		for( int q = 0; q < Q;++q){
 			d.add(new TreeMap<Integer,List<Integer>>());
@@ -329,13 +329,13 @@ public class Automaton {
 					d.get(q).put(l, new ArrayList<Integer>());
 				}
 				d.get(q).get(l).add(p);
-			} 
+			}
 		}
-		canonized = false;		
+		canonized = false;
 	}
 
 	/**
-	 * Default constructor. It just initializes the field members. 
+	 * Default constructor. It just initializes the field members.
 	 */
 	public List<String> getLabel(){
 		return label;
@@ -364,13 +364,13 @@ public class Automaton {
 	}
 	/**
 	 * Takes a regular expression and the alphabet for that regular expression and constructs the corresponding automaton.
-	 * For example if the regularExpression = "01*" and alphabet = [0,1,2], then the resulting automaton accepts 
+	 * For example if the regularExpression = "01*" and alphabet = [0,1,2], then the resulting automaton accepts
 	 * words of the form 01* over the alphabet {0,1,2}.<br>
-	 * 
+	 *
 	 * We actually compute the automaton for regularExpression intersected with alphabet*.
 	 * So for example if regularExpression = [^4]* and alphabet is [1,2,4], then the resulting
 	 * automaton accepts (1|2)*<br>
-	 * 
+	 *
 	 * An important thing to note here is that the automaton being constructed
 	 * with this constructor, has only one input, and it is of type Type.alphabetLetter.
 	 * @param address
@@ -423,14 +423,14 @@ public class Automaton {
 					}
 				}
 			}
-		}	
+		}
 	}
-	
+
 	public Automaton(String regularExpression,List<Integer> alphabet,NumberSystem numSys)throws Exception{
 		this(regularExpression,alphabet);
 		NS.set(0,numSys);
 	}
-	
+
 	/**
 	 * Takes an address and constructs the automaton represented by the file referred to by the address
 	 * @param address
@@ -465,7 +465,7 @@ public class Automaton {
 						for(int i = 0; i < A.size();i++){
 							if(NS.get(i) != null && (!A.get(i).contains(0)||!A.get(i).contains(1))){
 								in.close();
-								throw new Exception("the "+ (i+1) +"th input of type arithmetic of the automaton declared in file " +address+ " requires 0 and 1 in its input alphabet: line " + lineNumber);	
+								throw new Exception("the "+ (i+1) +"th input of type arithmetic of the automaton declared in file " +address+ " requires 0 and 1 in its input alphabet: line " + lineNumber);
 							}
 							UtilityMethods.removeDuplicates(A.get(i));
 							alphabetSize *= A.get(i).size();
@@ -485,7 +485,7 @@ public class Automaton {
 			TreeMap<Integer,List<Integer>> currentStateTransitions = new TreeMap<>();
 			TreeMap<Integer,Integer> state_output = new TreeMap<Integer,Integer>();
 			TreeMap<Integer,TreeMap<Integer,List<Integer>>> state_transition = new TreeMap<Integer,TreeMap<Integer,List<Integer>>>();
-			/**this will hold all states that are destination of some transition. Then we make sure all these states 
+			/**this will hold all states that are destination of some transition. Then we make sure all these states
 			 * are declared.
 			 */
 			Set<Integer> setOfDestinationStates = new HashSet<Integer>();
@@ -528,8 +528,8 @@ public class Automaton {
 			for(int q:setOfDestinationStates)
 				if(!state_output.containsKey(q))
 					throw new Exception("state " + q +" is used but never declared anywhere in file: " + address);
-				
-			
+
+
 			for(int q = 0 ;q < Q;q++){
 				O.add(state_output.get(q));
 				d.add(state_transition.get(q));
@@ -575,7 +575,7 @@ public class Automaton {
 		}
 		return M;
 	}
-	
+
 	public void quantify(String labelToQuantify,boolean print, String prefix,StringBuffer log)throws Exception{
 		Set<String> listOfLabelsToQuantify = new HashSet<String>();
 		listOfLabelsToQuantify.add(labelToQuantify);
@@ -589,12 +589,12 @@ public class Automaton {
 	}
 	/**
 	 * This method computes the existential quantification of this automaton.
-	 * Takes a list of labels and performs the existential quantifier over 
+	 * Takes a list of labels and performs the existential quantifier over
 	 * the inputs with labels in listOfLabelsToQuantify. It simply eliminates inputs in listOfLabelsToQuantify.
 	 * After the quantification is done, we address the issue of
-	 * leadingZeros or trailingZeors (depending on the value of leadingZeros), if all of the inputs 
+	 * leadingZeros or trailingZeors (depending on the value of leadingZeros), if all of the inputs
 	 * of the resulting automaton are of type arithmetic.
-	 * This is why we mandate that an input of type arithmetic must have 0 in its alphabet, also that 
+	 * This is why we mandate that an input of type arithmetic must have 0 in its alphabet, also that
 	 * every number system must use 0 to denote its additive identity.
 	 * @param listOfLabelsToQuantify must contain at least one element. listOfLabelsToQuantify must be a subset of this.label.
 	 * @param leadingZero determines which of leadingZeros or trailingZeros should be addressed after quantification.
@@ -603,7 +603,7 @@ public class Automaton {
 	public void quantify(Set<String> listOfLabelsToQuantify, boolean print, String prefix,StringBuffer log)throws Exception{
 		quantifyHelper(listOfLabelsToQuantify,print,prefix,log);
 		if(TRUE_FALSE_AUTOMATON)return;
-		
+
 		boolean isMsd = true;
 		boolean flag = false;
 		for(NumberSystem ns:NS){
@@ -626,7 +626,7 @@ public class Automaton {
 	 * @throws Exception
 	 */
 	private void quantifyHelper(Set<String> listOfLabelsToQuantify,boolean print, String prefix, StringBuffer log)throws Exception{
-		if(listOfLabelsToQuantify.isEmpty())
+		if(listOfLabelsToQuantify.isEmpty() || label == null)
 			return;
 		//throw new Exception("quantification requires a non empty list of qunatified variables");
 		String name_of_labels = "";
@@ -644,7 +644,7 @@ public class Automaton {
 			log.append(msg + UtilityMethods.newLine());
 			System.out.println(msg);
 		}
-		
+
 		/**
 		 * If this is the case, then the quantified automaton is either the true or false automaton.
 		 * It is true if this's language is not empty.
@@ -652,13 +652,13 @@ public class Automaton {
 		if(listOfLabelsToQuantify.size() == A.size()){
 			if(isEmpty())
 				TRUE_AUTOMATON = false;
-			else 
+			else
 				TRUE_AUTOMATON = true;
 			TRUE_FALSE_AUTOMATON = true;
 			clear();
 			return;
 		}
-		
+
 		List<Integer> listOfInputsToQuantify = new ArrayList<Integer>();//extract the list of indices of inputs we would like to quantify
 		for(String l:listOfLabelsToQuantify)
 			listOfInputsToQuantify.add(label.indexOf(l));
@@ -691,8 +691,8 @@ public class Automaton {
 					newTransitionFunction.put(y,new ArrayList<Integer>(d.get(q).get(x)));
 			}
 		}
-		d = new_d;	
-		minimize(print,prefix +" ",log);	
+		d = new_d;
+		minimize(print,prefix +" ",log);
 		long timeAfter = System.currentTimeMillis();
 		if(print){
 			String msg = prefix + "quantified:" + Q + " states - "+(timeAfter-timeBefore)+"ms";
@@ -703,7 +703,7 @@ public class Automaton {
 	/**
 	 * this automaton should not be a word automaton (automaton with output). However, it can be non deterministic.
 	 * @return the reverse of this automaton
-	 * @throws Exception 
+	 * @throws Exception
 	 */
 	public void reverse(boolean print, String prefix, StringBuffer log) throws Exception{
 		if(TRUE_FALSE_AUTOMATON)return;
@@ -739,11 +739,11 @@ public class Automaton {
 			}
 		}
 		O.set(q0, 1);/**initial state becomes the final state.*/
-		
+
 		subsetConstruction(setOfFinalStates,print,prefix+" ",log);
-		
+
 		minimize(print,prefix+" ",log);
-		
+
 		long timeAfter = System.currentTimeMillis();
 		if(print){
 			String msg = prefix + "reversed:" + Q + " states - "+(timeAfter-timeBefore)+"ms";
@@ -755,11 +755,11 @@ public class Automaton {
 	 * This method is used in and, or, not, and many others.
 	 * This automaton and M should have TRUE_FALSE_AUTOMATON = false.
 	 * Both this automaton and M must have labeled inputs.
-	 * For the sake of an example, suppose that Q = 3, q0 = 1, M.Q = 2, and M.q0 = 0. Then N.Q = 6 and the states of N 
+	 * For the sake of an example, suppose that Q = 3, q0 = 1, M.Q = 2, and M.q0 = 0. Then N.Q = 6 and the states of N
 	 * are {0=(0,0),1=(0,1),2=(1,0),3=(1,1),4=(2,0),5=(2,1)} and N.q0 = 2. The transitions of state (a,b) is then
-	 * based on the transitions of a and b in this and M. 
+	 * based on the transitions of a and b in this and M.
 	 * To continue with this example suppose that label = ["i","j"] and
-	 * M.label = ["p","q","j"]. Then N.label = ["i","j","p","q"], and inputs to N are four tuples. 
+	 * M.label = ["p","q","j"]. Then N.label = ["i","j","p","q"], and inputs to N are four tuples.
 	 * Now suppose in this we go from 0 to 1 by reading (i=1,j=2)
 	 * and in M we go from 1 to 0 by reading (p=-1,q=-2,j=2).
 	 * Then in N we go from (0,1) to (1,0) by reading (i=1,j=2,p=-1,q=-2).
@@ -774,14 +774,14 @@ public class Automaton {
 			throw new Exception("invalid use of the crossProduct method: the automata for this method must have labeled inputs");
 		/**N is going to hold the cross product*/
 		Automaton N = new Automaton();
-		
+
 		long timeBefore = System.currentTimeMillis();
 		if(print){
 			String msg = prefix + "computing cross product:" + Q + " states - " + M.Q + " states";
 			log.append(msg + UtilityMethods.newLine());
 			System.out.println(msg);
 		}
-		
+
 		/**
 		 * for example when sameLabelsInMAndThis[2] = 3, then input 2 of M has the same label as input 3 of this
 		 * and when sameLabelsInMAndThis[2] = -1, it means that input 2 of M is not an input of this
@@ -878,7 +878,7 @@ public class Automaton {
 				N.O.add((O.get(p) >= M.O.get(q)) ? 1 : 0);
 				break;
 			}
-			
+
 			for(int x:d.get(p).keySet()){
 				for(int y:M.d.get(q).keySet()){
 					int z = allInputsOfN.get(x*M.alphabetSize+y);
@@ -912,39 +912,39 @@ public class Automaton {
 	/**
 	 * @param M
 	 * @return this automaton and M.
-	 * @throws Exception 
+	 * @throws Exception
 
 	 */
-	public Automaton and(Automaton M, boolean print, String prefix, StringBuffer log) throws Exception{	
+	public Automaton and(Automaton M, boolean print, String prefix, StringBuffer log) throws Exception{
 		if((TRUE_FALSE_AUTOMATON && TRUE_AUTOMATON) && (M.TRUE_FALSE_AUTOMATON && M.TRUE_AUTOMATON)) return new Automaton(true);
 		if((TRUE_FALSE_AUTOMATON && !TRUE_AUTOMATON) || (M.TRUE_FALSE_AUTOMATON && !M.TRUE_AUTOMATON)) return new Automaton(false);
 
 		if(TRUE_FALSE_AUTOMATON && TRUE_AUTOMATON)return M;
 		if(M.TRUE_FALSE_AUTOMATON && M.TRUE_AUTOMATON)return this;
-		
+
 		long timeBefore = System.currentTimeMillis();
 		if(print){
 			String msg = prefix + "computing &:" + Q + " states - " + M.Q + " states";
 			log.append(msg + UtilityMethods.newLine());
 			System.out.println(msg);
 		}
-		
+
 		Automaton N = crossProduct(M,"&",print,prefix,log);
 		N.minimize(print,prefix+" ",log);
-		
+
 		long timeAfter = System.currentTimeMillis();
 		if(print){
 			String msg = prefix + "computed &:" + N.Q + " states - "+(timeAfter-timeBefore)+"ms";
 			log.append(msg + UtilityMethods.newLine());
 			System.out.println(msg);
 		}
-		
+
 		return N;
 	}
 	/**
 	 * @param M
 	 * @return 	this automaton or M
-	 * @throws Exception 
+	 * @throws Exception
 	 */
 	public Automaton or(Automaton M, boolean print, String prefix, StringBuffer log) throws Exception{
 		if((TRUE_FALSE_AUTOMATON && TRUE_AUTOMATON) || (M.TRUE_FALSE_AUTOMATON && M.TRUE_AUTOMATON)) return new Automaton(true);
@@ -952,7 +952,7 @@ public class Automaton {
 
 		if(TRUE_FALSE_AUTOMATON && !TRUE_AUTOMATON)return M;
 		if(M.TRUE_FALSE_AUTOMATON && !M.TRUE_AUTOMATON)return this;
-		
+
 		long timeBefore = System.currentTimeMillis();
 		if(print){
 			String msg = prefix + "computing |:" + Q + " states - " + M.Q + " states";
@@ -963,21 +963,21 @@ public class Automaton {
 		totalize(print,prefix+" ",log);
 		M.totalize(print,prefix+" ",log);
 		Automaton N = crossProduct(M,"|",print,prefix,log);
-	
+
 		N.minimize(print,prefix +" ",log);
 		N.applyAllRepresentations();
-		
+
 		long timeAfter = System.currentTimeMillis();
 		if(print){
 			String msg = prefix + "computed |:" + N.Q + " states - "+(timeAfter-timeBefore)+"ms";
 			log.append(msg + UtilityMethods.newLine());
 			System.out.println(msg);
 		}
-		
-		return N;		
+
+		return N;
 	}
 	/**
-	 * 
+	 *
 	 * @param M
 	 * @return this automaton xor M
 	 * @throws Exception
@@ -990,7 +990,7 @@ public class Automaton {
 
 		if(TRUE_FALSE_AUTOMATON && !TRUE_AUTOMATON)return M;
 		if(M.TRUE_FALSE_AUTOMATON && !M.TRUE_AUTOMATON)return this;
-		
+
 		if(TRUE_FALSE_AUTOMATON && TRUE_AUTOMATON){
 			M.not(print,prefix,log);
 			return M;
@@ -999,7 +999,7 @@ public class Automaton {
 			this.not(print,prefix,log);
 			return this;
 		}
-		
+
 		long timeBefore = System.currentTimeMillis();
 		if(print){
 			String msg = prefix + "computing ^:" + Q + " states - " + M.Q + " states";
@@ -1012,24 +1012,24 @@ public class Automaton {
 		Automaton N = crossProduct(M,"^",print,prefix + " ", log);
 		N.minimize(print,prefix+" ",log);
 		N.applyAllRepresentations();
-		
+
 		long timeAfter = System.currentTimeMillis();
 		if(print){
 			String msg = prefix + "computed ^:" + N.Q + " states - "+(timeAfter-timeBefore)+"ms";
 			log.append(msg + UtilityMethods.newLine());
 			System.out.println(msg);
 		}
-		return N;		
+		return N;
 	}
 	/**
 	 * @param M
 	 * @return 	this automaton imply M
-	 * @throws Exception 
+	 * @throws Exception
 	 */
-	public Automaton imply(Automaton M,boolean print, String prefix, StringBuffer log) throws Exception{		
+	public Automaton imply(Automaton M,boolean print, String prefix, StringBuffer log) throws Exception{
 		if((TRUE_FALSE_AUTOMATON && TRUE_AUTOMATON) && (M.TRUE_FALSE_AUTOMATON && !M.TRUE_AUTOMATON)) return new Automaton(false);
 		if((TRUE_FALSE_AUTOMATON && !TRUE_AUTOMATON) || (M.TRUE_FALSE_AUTOMATON && M.TRUE_AUTOMATON)) return new Automaton(true);
-		if(TRUE_FALSE_AUTOMATON && TRUE_AUTOMATON)return M;		
+		if(TRUE_FALSE_AUTOMATON && TRUE_AUTOMATON)return M;
 		if(M.TRUE_FALSE_AUTOMATON && !M.TRUE_AUTOMATON){
 			this.not(print,prefix,log);
 			return this;
@@ -1041,35 +1041,35 @@ public class Automaton {
 			log.append(msg + UtilityMethods.newLine());
 			System.out.println(msg);
 		}
-		
+
 		totalize(print,prefix+" ",log);
 		M.totalize(print,prefix+" ",log);
 		Automaton N = crossProduct(M,"=>",print,prefix+" ",log);
 		N.minimize(print,prefix+" ",log);
 		N.applyAllRepresentations();
-		
+
 		long timeAfter = System.currentTimeMillis();
 		if(print){
 			String msg = prefix + "computed =>:" + N.Q + " states - "+(timeAfter-timeBefore)+"ms";
 			log.append(msg + UtilityMethods.newLine());
 			System.out.println(msg);
 		}
-		
-		return N;		
+
+		return N;
 	}
 	/**
 	 * @param M
 	 * @return 	this automaton iff M
-	 * @throws Exception 
+	 * @throws Exception
 	 */
-	public Automaton iff(Automaton M,boolean print, String prefix, StringBuffer log) throws Exception{	
+	public Automaton iff(Automaton M,boolean print, String prefix, StringBuffer log) throws Exception{
 		if(((TRUE_FALSE_AUTOMATON && TRUE_AUTOMATON) && (M.TRUE_FALSE_AUTOMATON && M.TRUE_AUTOMATON)) ||
 				((TRUE_FALSE_AUTOMATON && !TRUE_AUTOMATON) && (M.TRUE_FALSE_AUTOMATON && !M.TRUE_AUTOMATON))) return new Automaton(true);
 		if(((TRUE_FALSE_AUTOMATON && TRUE_AUTOMATON) && (M.TRUE_FALSE_AUTOMATON && !M.TRUE_AUTOMATON)) ||
 				((TRUE_FALSE_AUTOMATON && !TRUE_AUTOMATON) && (M.TRUE_FALSE_AUTOMATON && M.TRUE_AUTOMATON))) return new Automaton(false);
-			
+
 		if(TRUE_FALSE_AUTOMATON && TRUE_AUTOMATON)return M;
-		if(M.TRUE_FALSE_AUTOMATON && M.TRUE_AUTOMATON)return this;	
+		if(M.TRUE_FALSE_AUTOMATON && M.TRUE_AUTOMATON)return this;
 		if(TRUE_FALSE_AUTOMATON && !TRUE_AUTOMATON){
 			M.not(print,prefix,log);
 			return M;
@@ -1078,7 +1078,7 @@ public class Automaton {
 			this.not(print,prefix,log);
 			return this;
 		}
-		
+
 		long timeBefore = System.currentTimeMillis();
 		if(print){
 			String msg = prefix + "computing <=>:" + Q + " states - " + M.Q + " states";
@@ -1091,40 +1091,40 @@ public class Automaton {
 		Automaton N = crossProduct(M,"<=>",print,prefix+" ",log);
 		N.minimize(print,prefix+" ",log);
 		N.applyAllRepresentations();
-		
+
 		long timeAfter = System.currentTimeMillis();
 		if(print){
 			String msg = prefix + "computed <=>:" + N.Q + " states - "+(timeAfter-timeBefore)+"ms";
 			log.append(msg + UtilityMethods.newLine());
 			System.out.println(msg);
 		}
-		
-		return N;		
+
+		return N;
 	}
 	/**
 	 * @return changes this automaton to its negation
-	 * @throws Exception 
+	 * @throws Exception
 	 */
 	public void not(boolean print, String prefix, StringBuffer log) throws Exception{
 		if(TRUE_FALSE_AUTOMATON){
 			TRUE_AUTOMATON = !TRUE_AUTOMATON;
 			return;
 		}
-		
+
 		long timeBefore = System.currentTimeMillis();
 		if(print){
 			String msg = prefix + "computing ~:" + Q + " states";
 			log.append(msg + UtilityMethods.newLine());
 			System.out.println(msg);
 		}
-		
+
 		totalize(print,prefix+" ",log);
 		for(int q = 0 ; q < Q;q++)
 			O.set(q, O.get(q) != 0 ? 0 : 1 );
 
 		minimize(print,prefix+" ",log);
 		applyAllRepresentations();
-		
+
 		long timeAfter = System.currentTimeMillis();
 		if(print){
 			String msg = prefix + "computed ~:" + Q + " states - "+(timeAfter-timeBefore)+"ms";
@@ -1132,7 +1132,7 @@ public class Automaton {
 			System.out.println(msg);
 		}
 	}
-	
+
 	public boolean equals(Automaton M)throws Exception{
 		if(M == null)return false;
 		if(TRUE_FALSE_AUTOMATON != M.TRUE_FALSE_AUTOMATON)return false;
@@ -1175,24 +1175,24 @@ public class Automaton {
 		label = new ArrayList<String>();
 		labelSorted = false;
 	}
-	private void copy(Automaton M){	
+	private void copy(Automaton M){
 		TRUE_FALSE_AUTOMATON = M.TRUE_FALSE_AUTOMATON;
 		TRUE_AUTOMATON = M.TRUE_AUTOMATON;
-		A = M.A; 
+		A = M.A;
 		NS = M.NS;
 		alphabetSize = M.alphabetSize;
 		encoder = M.encoder;
 		Q = M.Q;
 		q0 = M.q0;
-		O = M.O;	
-		label = M.label;	
-		canonized = M.canonized;	
-		labelSorted = M.labelSorted;	
+		O = M.O;
+		label = M.label;
+		canonized = M.canonized;
+		labelSorted = M.labelSorted;
 		d = M.d;
 	}
 	/**
 	 * This method adds a dead state to totalize the transition function
-	 * @throws Exception 
+	 * @throws Exception
 	 */
 	private void totalize(boolean print, String prefix, StringBuffer log) throws Exception{
 		long timeBefore = System.currentTimeMillis();
@@ -1223,7 +1223,7 @@ public class Automaton {
 				d.get(Q-1).put(x, nullState);
 			}
 		}
-		
+
 		long timeAfter = System.currentTimeMillis();
 		if(print){
 			String msg = prefix + "totalized:" + Q + " states - "+(timeAfter-timeBefore)+"ms";
@@ -1233,13 +1233,13 @@ public class Automaton {
 	}
 	/**
 	 * The operator can be one of "<" ">" "=" "!=" "<=" ">=".
-	 * For example if operator = "<" then this method returns 
+	 * For example if operator = "<" then this method returns
 	 * a DFA that accepts x iff this[x] < W[x] lexicographically.
 	 * To be used only when this automaton and M are DFAOs (words).
 	 * @param W
 	 * @param operator
 	 * @return
-	 * @throws Exception 
+	 * @throws Exception
 	 */
 	public Automaton compare(Automaton W, String operator,boolean print, String prefix,StringBuffer log) throws Exception{
 		long timeBefore = System.currentTimeMillis();
@@ -1266,7 +1266,7 @@ public class Automaton {
 	 * @param W
 	 * @param operator
 	 * @return
-	 * @throws Exception 
+	 * @throws Exception
 	 */
 	public void compare(int o, String operator, boolean print, String prefix,StringBuffer log) throws Exception{
 		long timeBefore = System.currentTimeMillis();
@@ -1305,12 +1305,12 @@ public class Automaton {
 			System.out.println(msg);
 		}
 	}
-	
+
 	/**
 	 * Writes this automaton to a file given by the address.
 	 * This automaton can be non deterministic. It can also be a DFAO. However it cannot have epsilon transition.
 	 * @param address
-	 * @throws 
+	 * @throws
 	 */
 	public void write(String address){
 		try {
@@ -1343,7 +1343,7 @@ public class Automaton {
 				for(int j = 0 ; j < l.size();j++){
 					if(j == 0){
 						out.write(Integer.toString(l.get(j)));
-					
+
 					}
 					else out.write(","+Integer.toString(l.get(j)));
 				}
@@ -1354,7 +1354,7 @@ public class Automaton {
 					out.write(NS.get(i).toString());
 				else
 					out.write(" " + NS.get(i).toString());
-					
+
 			}
 		}
 		out.write(UtilityMethods.newLine());
@@ -1405,17 +1405,17 @@ public class Automaton {
 			    else
 			    	gv.addln("node [shape = circle, label=\""+q+"\", fontsize=12]"+q +";");
 		    }
-		      
+
 		    gv.addln("node [shape = point ]; qi");
 		    gv.addln("qi ->" + q0+";");
-		      
+
 		    for(int q = 0 ; q < Q;q++){
 		    	for(int x:d.get(q).keySet())
 		    		for(int dest:d.get(q).get(x))
 		    			gv.addln(q + " -> " + dest+ "[ label = \""+ UtilityMethods.toTuple(decode(x)) + "\"];");
 		    }
 		    gv.addln(gv.end_graph());
-		    
+
 	    }
 	    try {
 			PrintWriter out = new PrintWriter(address, "UTF-8");
@@ -1427,9 +1427,9 @@ public class Automaton {
 			e2.printStackTrace();
 		}
 	}
-	
+
 	/**
-	 * Writes down matrices for this automaton to a .mpl file given by the address. 
+	 * Writes down matrices for this automaton to a .mpl file given by the address.
 	 * @param address
 	 */
 	public String write_matrices(String address,List<String> free_variables)throws Exception{
@@ -1455,7 +1455,7 @@ public class Automaton {
 	    }
     	write_final_states_vector(s);
     	String res = s.toString();
-	
+
 	    try {
 			PrintWriter out = new PrintWriter(address, "UTF-8");
 			out.write(res);
@@ -1486,7 +1486,7 @@ public class Automaton {
 					}
 				}
 			}
-			
+
 			s.append("[");
 			for(int q = 0; q < Q;++q){
 				s.append(M[p][q]);
@@ -1518,7 +1518,7 @@ public class Automaton {
 		}
 		s.append("]);" + UtilityMethods.newLine());
 	}
-	
+
 	private void write_final_states_vector(StringBuffer s){
 		s.append(UtilityMethods.newLine()+"# The column vector v denotes the indicator vector of the" + UtilityMethods.newLine());
 		s.append("# set of final states." + UtilityMethods.newLine());
@@ -1550,7 +1550,7 @@ public class Automaton {
 		}
 		minimize_valmari(print,prefix+" ",log);
 		//minimize_hopcroft();
-		
+
 		long timeAfter = System.currentTimeMillis();
 		if(print){
 			String msg = prefix + "minimized:" + Q + " states - "+(timeAfter-timeBefore)+"ms";
@@ -1566,7 +1566,7 @@ public class Automaton {
 		if(M.isDeterministic()){
 			M.minimize();
 		}
-		else{ 
+		else{
 			M.determinize();
 			M.minimize();
 		}
@@ -1613,7 +1613,7 @@ public class Automaton {
 	 * Set the fields of this automaton to represent a dk.brics.automaton.Automaton.
 	 * An automata in our program can be of type Automaton or dk.brics.automaton.Automaton. We use package
 	 * dk.bricks.automaton for automata minimization. This method transforms an automaton of type dk.bricks.automaton.Automaton
-	 * to an automaton of type Automaton. 
+	 * to an automaton of type Automaton.
 	 * @param M is a deterministic automaton without output.
 	 */
 	private void setThisAutomatonToRepresent(dk.brics.automaton.Automaton M)throws Exception{
@@ -1638,7 +1638,7 @@ public class Automaton {
 					currentStatesTransitions.put((int)a, dest);
 				}
 			}
-		}	
+		}
 	}
 	/**
 	*  Sorts states in Q based on their breadth-first order. It also calls sortLabel().
@@ -1646,16 +1646,16 @@ public class Automaton {
 	*  In draw() and write() methods, we first call the canonize the automaton.
 	*  It is also used in write() method.
 	*  Note that before we try to canonize, we check if this automaton is already canonized.
-	 * @throws Exception 
+	 * @throws Exception
 	 */
 	public void canonize(){
 		sortLabel();
 		if(canonized)return;
 		canonized = true;
-		if(TRUE_FALSE_AUTOMATON)return;		
+		if(TRUE_FALSE_AUTOMATON)return;
 		Queue<Integer> state_queue = new LinkedList<Integer>();
 		state_queue.add(q0);
-		/**map holds the permutation we need to apply to Q. In other words if map = {(0,3),(1,10),...} then 
+		/**map holds the permutation we need to apply to Q. In other words if map = {(0,3),(1,10),...} then
 		*we have got to send Q[0] to Q[3] and Q[1] to Q[10]*/
 		HashMap<Integer,Integer> map = new HashMap<Integer,Integer>();
 		map.put(q0,0);
@@ -1666,7 +1666,7 @@ public class Automaton {
 				for(int p: d.get(q).get(x))
 					if(!map.containsKey(p)){
 						map.put(p, i++);
-						state_queue.add(p);	
+						state_queue.add(p);
 					}
 		}
 		q0 = map.get(q0);
@@ -1677,7 +1677,7 @@ public class Automaton {
 		for(int q = 0; q < Q;q++)
 			if(map.containsKey(q))
 				newO.set(map.get(q),O.get(q));
-		
+
 		List<TreeMap<Integer,List<Integer>>> new_d = new ArrayList<TreeMap<Integer,List<Integer>>>();
 		for(int q = 0 ; q < newQ;q++)
 			new_d.add(null);
@@ -1700,13 +1700,13 @@ public class Automaton {
 			}
 		}
 	}
-	
+
 	/**
 	 *  Sorts inputs based on their labels lexicographically.
 	 *  For example if the labels of the inputs are ["b","c","a"], then the first, second, and third
-	 *  inputs are "a", "b", and "c". Now if we call sortLabels(), the order of inputs changes: label becomes 
+	 *  inputs are "a", "b", and "c". Now if we call sortLabels(), the order of inputs changes: label becomes
 	 *  sorted in lexicographic order ["a","b","c"], and therefore, the first, second, and third inputs are
-	 *  now "a", "b", and "c". Before we draw this automaton using draw() method, 
+	 *  now "a", "b", and "c". Before we draw this automaton using draw() method,
 	 *  we first sort the labels (inside canonize method).
 	 *  It is also used in write() method.
 	 *  Note that before we try to sort, we check if the label is already sorted.
@@ -1759,7 +1759,7 @@ public class Automaton {
 			List<Integer> permuted_input = UtilityMethods.permute(input, label_permutation);
 			encoded_input_permutation[i] = encode(permuted_input, permuted_A,permuted_encoder);
 		}
-		
+
 		label = sorted_label;
 		A = permuted_A;
 		encoder = permuted_encoder;
@@ -1773,9 +1773,9 @@ public class Automaton {
 		}
 	}
 	/**
-	 * Input to dk.brics.automaton.Automata is a char. Input to Automaton is List<Integer>. 
+	 * Input to dk.brics.automaton.Automata is a char. Input to Automaton is List<Integer>.
 	 * Thus this method transforms an integer to its corresponding List<Integer>
-	 * Example: A = [[0,1],[-1,2,3]] and if 
+	 * Example: A = [[0,1],[-1,2,3]] and if
 	 * n = 0 then we return [0,-1]
 	 * n = 1 then we return [1,-1]
 	 * n = 2 then we return [0,2]
@@ -1794,12 +1794,12 @@ public class Automaton {
 		return l;
 	}
 	/**
-	 * Input to dk.brics.automaton.Automata is a char. Input to Automata.Automaton is List<Integer>. 
-	 * Thus this method transforms a List<Integer> to its corresponding integer. 
+	 * Input to dk.brics.automaton.Automata is a char. Input to Automata.Automaton is List<Integer>.
+	 * Thus this method transforms a List<Integer> to its corresponding integer.
 	 * The other application of this function is when we use the transition function d in State. Note that the transtion function
 	 * maps an integer (encoding of List<Integer>) to a set of states.
-	 * 
-	 * Example: A = [[0,1],[-1,2,3]] and if 
+	 *
+	 * Example: A = [[0,1],[-1,2,3]] and if
 	 * l = [0,-1] then we return 0
 	 * l = [1,-1] then we return 1
 	 * l = [0,2] then we return 2
@@ -1933,9 +1933,9 @@ public class Automaton {
 		statesList.add(initial_state);
 		statesHash.put(initial_state, statesList.size()-1);
 		number_of_states++;
-		
-		List<TreeMap<Integer,List<Integer>>> new_d = new ArrayList<TreeMap<Integer,List<Integer>>>(); 
-	
+
+		List<TreeMap<Integer,List<Integer>>> new_d = new ArrayList<TreeMap<Integer,List<Integer>>>();
+
 		while(current_state < number_of_states){
 			HashSet<Integer> state = statesList.get(current_state);
 			new_d.add(new TreeMap<Integer,List<Integer>>());
@@ -1965,7 +1965,7 @@ public class Automaton {
 			}
 			current_state++;
 		}
-		
+
 		d = new_d;
 		Q = number_of_states;
 		q0 = 0;
@@ -2009,7 +2009,7 @@ public class Automaton {
 		if(!d.get(q0).get(zero).contains(q0)){
 			d.get(q0).get(zero).add(q0);
 		}
-		
+
 		HashSet<Integer> initial_state = zeroReachableStates();
 		subsetConstruction(initial_state,print,prefix+" ",log);
 		minimize(print, prefix+" ", log);
@@ -2042,7 +2042,7 @@ public class Automaton {
 		}
 
 		minimize(print,prefix+" ",log);
-		
+
 		long timeAfter = System.currentTimeMillis();
 		if(print){
 			String msg = prefix + "fixed trailing zeros:" + Q + " states - "+(timeAfter-timeBefore)+"ms";
@@ -2050,7 +2050,7 @@ public class Automaton {
 			System.out.println(msg);
 		}
 	}
-	/**Returns the set of states reachable from the initial state by reading 0* 
+	/**Returns the set of states reachable from the initial state by reading 0*
 	*/
 	private HashSet<Integer> zeroReachableStates(){
 		HashSet<Integer> result = new HashSet<Integer>();
@@ -2069,7 +2069,7 @@ public class Automaton {
 		}
 		return result;
 	}
-	
+
 	/**
 	 * So for example if f is a final state and f is reachable from q by reading 0*
 	 * then q will be in the resulting set of this method.
@@ -2105,7 +2105,7 @@ public class Automaton {
 	/**
 	 * For example, suppose that first = [1,2,3], second = [-1,4,2], and equalIndices = [-1,-1,1].
 	 * Then the result is [1,2,3,-1,4].
-	 * However if second = [-1,4,3] then the result is null 
+	 * However if second = [-1,4,3] then the result is null
 	 * because 3rd element of second is not equal two 2nd element of first.
 	 * @param first
 	 * @param second
@@ -2125,11 +2125,11 @@ public class Automaton {
 		return R;
 	}
 	/**
-	 * Checks if any input has the same label as input i. It then removes copies of input i appropriately. So for example an 
+	 * Checks if any input has the same label as input i. It then removes copies of input i appropriately. So for example an
 	 * expression like f(a,a) becomes
 	 * an automaton with one input. After we are done with input i, we call removeSameInputs(i+1)
 	 * @param i
-	 * @throws Exception 
+	 * @throws Exception
 	 */
 	private void removeSameInputs(int i) throws Exception{
 		if(i >= A.size())return;
@@ -2189,13 +2189,13 @@ public class Automaton {
 		List<Integer> x = decode(n);
 		for(int i = 1 ; i < I.size();i++)
 			if(x.get(I.get(i)) != x.get(I.get(0)))
-				return -1;		
+				return -1;
 		List<Integer> y = new ArrayList<Integer>();
 		for(int i = 0 ; i < x.size();i++)
 			if(!I.contains(i) || I.indexOf(i) == 0)
 				y.add(x.get(i));
 		return encode(y, newAlphabet, newEncoder);
-	}	
+	}
 	/*private boolean connected(int p,int q,int i){
 		if(d.get(p).containsKey(i)){
 			if(d.get(p).get(i).contains(q))return true;
@@ -2204,7 +2204,7 @@ public class Automaton {
 	}
 	public void computeMatrices(List<String> inputToComputeMatrices, List<String> variationsOfTheInputs, List<int[][]> matrices) throws Exception{
 		canonize();
-		
+
 		for(String x:inputToComputeMatrices){
 			if(!label.contains(x)){
 				throw new Exception("no free variable with label "+x +" to compute the matrix");
@@ -2228,6 +2228,6 @@ public class Automaton {
 		}
 	}
 	private HashMap<String,List<Integer>> computeAllVariationsOfInputs(List<String> inputToComputeMatrices){
-		
+
 	}*/
 }
