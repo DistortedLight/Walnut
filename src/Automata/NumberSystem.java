@@ -65,11 +65,13 @@ public class NumberSystem {
 	 * Examples: msd_2, lsd_3, lsd_fib, ...
 	 */
 	String name;
+
 	/**
 	 * is_msd is used to determine which of first or last digit is the most significant digit. It'll be used when we
 	 * call Automaton.quantify method, and also in many other places.
 	 */
 	boolean is_msd;
+
 	/**
 	 * Automata for addition, lessThan, and equal<br>
 	 * -addition has three inputs, and it accepts
@@ -78,7 +80,11 @@ public class NumberSystem {
 	 * one is less than the second one. So the input is ordered!<br>
 	 * -equal has two inputs, and it accepts iff they are equal.
 	 */
-	public Automaton addition,lessThan,equality,allRepresentations;
+	public Automaton addition;
+	public Automaton lessThan;
+	public Automaton equality;
+	public Automaton allRepresentations;
+
 	/**
 	 * Used to compute constant(n),multiplication(n),division(n) with dynamic programming.
 	 * Because these three methods are time consuming, we would like to cache their results in three HashMaps.
@@ -87,15 +93,24 @@ public class NumberSystem {
 	 * multiplicationsDynamicTable(3) is the automaton that gets two inputs, and accepts if the second is 3 times the first. So the input is ordered!<br>
 	 * divisionsDynamicTable(5) is the automaton that gets two inputs, and accepts if the second is one-third of the first. So the input is ordered!<br>
 	 */
-	HashMap<Integer,Automaton> constantsDynamicTable,multiplicationsDynamicTable,divisionsDynamicTable;
+	HashMap<Integer,Automaton> constantsDynamicTable;
+	HashMap<Integer,Automaton> multiplicationsDynamicTable;
+	HashMap<Integer,Automaton> divisionsDynamicTable;
+
 	boolean flag_should_we_use_allRepresentations = true;
-	public boolean isMsd(){return is_msd;}
-	public boolean should_we_use_allRepresentations(){
+
+	public boolean isMsd() {
+		return is_msd;
+	}
+
+	public boolean should_we_use_allRepresentations() {
 		return flag_should_we_use_allRepresentations;
 	}
-	public List<Integer> getAlphabet(){
+
+	public List<Integer> getAlphabet() {
 		return addition.A.get(0);
 	}
+
 	public Automaton getAllRepresentations(){
 		return allRepresentations;
 	}
