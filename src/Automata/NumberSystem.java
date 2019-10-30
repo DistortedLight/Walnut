@@ -114,6 +114,7 @@ public class NumberSystem {
 	public Automaton getAllRepresentations(){
 		return allRepresentations;
 	}
+
 	public NumberSystem(String name) throws Exception{
 		this.name = name;
 		String msd_or_lsd = name.substring(0,name.indexOf("_"));
@@ -208,6 +209,7 @@ public class NumberSystem {
 		multiplicationsDynamicTable = new HashMap<>();
 		divisionsDynamicTable = new HashMap<>();
 	}
+
 	/**
 	 * Initializes equality. equality has two inputs, and accepts iff the two inputs are equal.
 	 * @param alphabet
@@ -227,6 +229,7 @@ public class NumberSystem {
 			equality.d.get(0).put(i*alphabet.size()+i,dest);
 		}
 	}
+
 	/**
 	 * Initializes lessThan to lexicographic lessThan. lessThan has two inputs, and it accepts iff the first
 	 * one is less than the second one. So the input is ordered!
@@ -263,11 +266,13 @@ public class NumberSystem {
 		}
 		if(!is_msd)lessThan.reverse(false,null,null);
 	}
+
 	private void applyAllRepresentations() throws Exception{
 		addition.applyAllRepresentations();
 		lessThan.applyAllRepresentations();
 		equality.applyAllRepresentations();
 	}
+
 	/**
 	 * Initializes addition to base n addition. addition has three inputs, and it accepts
 	 *  iff the third is the sum of the first two. So the input is ordered!
@@ -316,6 +321,7 @@ public class NumberSystem {
 		if(!is_msd)
 			addition.reverse(false,null,null);
 	}
+
 	/**
 	 *
 	 * @param n
@@ -325,15 +331,19 @@ public class NumberSystem {
 	public Automaton get(int n) throws Exception{
 		return constant(n).clone();
 	}
+
 	public Automaton getDivision(int n) throws Exception{
 		return division(n).clone();
 	}
+
 	public Automaton getMultiplication(int n) throws Exception{
 		return multiplication(n).clone();
 	}
+
 	public String toString(){
 		return name;
 	}
+
 	/**
 	 * @param a
 	 * @param b
@@ -343,7 +353,7 @@ public class NumberSystem {
 	 * So the input is not ordered!
 	 * @throws Exception
 	 */
-	public Automaton comparison(String a,String b,String comparisonOperator) throws Exception{
+	public Automaton comparison(String a,String b,String comparisonOperator) throws Exception {
 		Automaton M;
 		switch(comparisonOperator){
 		case "<":
@@ -378,6 +388,7 @@ public class NumberSystem {
 		}
 		return M;
 	}
+
 	/**
 	 * @param a
 	 * @param b a non negative integer
@@ -385,7 +396,7 @@ public class NumberSystem {
 	 * @return an Automaton with single input, with label = [a]. It accepts iff a comparisonOperator b.
 	 * @throws Exception
 	 */
-	public Automaton comparison(String a,int b,String comparisonOperator) throws Exception{
+	public Automaton comparison(String a,int b,String comparisonOperator) throws Exception {
 		if(b < 0)throw new Exception("negative constant " + b);
 		Automaton N,M;
 		N = get(b);
@@ -398,6 +409,7 @@ public class NumberSystem {
 		M.quantify(B,false,null,null);
 		return M;
 	}
+
 	/**
 	 * @param a a non negative integer
 	 * @param b
@@ -405,7 +417,7 @@ public class NumberSystem {
 	 * @return an Automaton with single input, with label = [b]. It accepts iff a comparisonOperator b.
 	 * @throws Exception
 	 */
-	public Automaton comparison(int a,String b,String comparisonOperator) throws Exception{
+	public Automaton comparison(int a,String b,String comparisonOperator) throws Exception {
 		if(a < 0)throw new Exception("negative constant " + a);
 		switch(comparisonOperator){
 		case "<":return comparison(b, a, ">");
@@ -418,6 +430,7 @@ public class NumberSystem {
 			throw new Exception("undefined comparison operator");
 		}
 	}
+
 	/**
 	 *
 	 * @param a
@@ -430,7 +443,11 @@ public class NumberSystem {
 	 * So the input is not ordered!
 	 * @throws Exception
 	 */
-	public Automaton arithmetic(String a, String b, String c, String arithmeticOperator) throws Exception{
+	public Automaton arithmetic(
+		String a,
+		String b,
+		String c,
+		String arithmeticOperator) throws Exception {
 		Automaton M = addition.clone();
 		switch(arithmeticOperator){
 		case "+":M.bind(a,b,c);break;
@@ -442,6 +459,7 @@ public class NumberSystem {
 		}
 		return M;
 	}
+
 	/**
 	 *
 	 * @param a
@@ -454,7 +472,11 @@ public class NumberSystem {
 	 * So the input is not ordered!
 	 * @throws Exception
 	 */
-	public Automaton arithmetic(String a, int b, String c,String arithmeticOperator) throws Exception{
+	public Automaton arithmetic(
+		String a,
+		int b,
+		String c,
+		String arithmeticOperator) throws Exception {
 		if(b < 0)throw new Exception("negative constant " + b);
 		Automaton N;
 		if(arithmeticOperator.equals("*")){
@@ -477,6 +499,7 @@ public class NumberSystem {
 		M.quantify(B,false,null,null);
 		return M;
 	}
+
 	/**
 	 *
 	 * @param a a non-negative integer
@@ -490,7 +513,11 @@ public class NumberSystem {
 	 * @throws Exception
 	 *
 	 */
-	public Automaton arithmetic(int a,String b,String c,String arithmeticOperator) throws Exception{
+	public Automaton arithmetic(
+		int a,
+		String b,
+		String c,
+		String arithmeticOperator) throws Exception {
 		if(a < 0)throw new Exception("negative constant " + a);
 		Automaton N;
 		if(arithmeticOperator.equals("*")){
@@ -508,44 +535,53 @@ public class NumberSystem {
 		M.quantify(A,false,null,null);
 		return M;
 	}
+
 	/**
 	 *
 	 * @param n
 	 * @return an Automaton with one input. It accepts when the input equals n.
 	 * @throws Exception
 	 */
-	private Automaton constant(int n) throws Exception{
-		if(n < 0)throw new Exception("constant cannot be negative");
-		if(constantsDynamicTable.containsKey(n))return constantsDynamicTable.get(n);
+	private Automaton constant(int n) throws Exception {
+		if (n < 0) {
+			throw new Exception("Constant cannot be negative.");
+		}
 
-		if(n == 0){
+		if (constantsDynamicTable.containsKey(n)) {
+			return constantsDynamicTable.get(n);
+		}
+
+		if(n == 0) {
 			Automaton zero = make_zero();
 			return zero;
 		}
-		if(n == 1){
+
+		if(n == 1) {
 			Automaton one = make_one();
 			return one;
 		}
-		String a = "a",b = "b",c = "c";
+
+		String a = "a", b = "b", c = "c";
 		Automaton M = get(n/2);
 
 		M.bind(a);
 		Automaton N = get(n/2 + (n%2 == 0 ? 0:1));
 		N.bind(b);
 		Automaton P = arithmetic(a, b, c, "+");
-		P = P.and(M,false,null,null);
-		P = P.and(N,false,null,null);
-		P.quantify(a,b,is_msd,false,null,null);
+		P = P.and(M, false, null, null);
+		P = P.and(N, false, null, null);
+		P.quantify(a, b, is_msd, false, null, null);
 		constantsDynamicTable.put(n, P);
 		return P;
 	}
+
 	/**
 	 * The returned automaton has two inputs, and it accepts iff the second is n times the first. So the input is ordered!
 	 * @param n
 	 * @return
 	 * @throws Exception
 	 */
-	private Automaton multiplication(int n)throws Exception{
+	private Automaton multiplication(int n)throws Exception {
 		if(n < 0)throw new Exception("constant cannot be negative");
 		if(n == 0)throw new Exception("multiplication(0)");
 		if(multiplicationsDynamicTable.containsKey(n))return multiplicationsDynamicTable.get(n);
@@ -569,13 +605,14 @@ public class NumberSystem {
 		multiplicationsDynamicTable.put(n, P);
 		return P;
 	}
+
 	/**
 	 * The returned automaton has two inputs, and it accepts iff the second is one nth of the first. So the input is ordered!
 	 * @param n
 	 * @return
 	 * @throws Exception
 	 */
-	private Automaton division(int n)throws Exception{
+	private Automaton division(int n)throws Exception {
 		if(n < 0)throw new Exception("constant cannot be negative");
 		if(n == 0)throw new Exception("division by zero");
 		if(divisionsDynamicTable.containsKey(n))return divisionsDynamicTable.get(n);
@@ -592,7 +629,7 @@ public class NumberSystem {
 		return R;
 	}
 
-	private Automaton make_zero()throws Exception{
+	private Automaton make_zero()throws Exception {
 		List<Integer> alph = new ArrayList<Integer>();
 		alph.add(0);
 		alph.add(1);
@@ -607,7 +644,7 @@ public class NumberSystem {
 		return M;
 	}
 
-	private Automaton make_one() throws Exception{
+	private Automaton make_one() throws Exception {
 		List<Integer> alph = new ArrayList<Integer>();
 		alph.add(0);
 		alph.add(1);
@@ -625,5 +662,4 @@ public class NumberSystem {
 		constantsDynamicTable.put(1, M);
 		return M;
 	}
-
 }

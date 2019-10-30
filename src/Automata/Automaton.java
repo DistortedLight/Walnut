@@ -200,6 +200,7 @@ public class Automaton {
 
     /* Adjacent transitions */
     int[] _A, _F;
+
     void make_adjacent(Integer K[]) {
         int q, t;
         for( q = 0; q <= nn; ++q ) {
@@ -222,7 +223,7 @@ public class Automaton {
     /* Removal of irrelevant parts */
     int rr = 0;   // number of reached states
 
-    void reach( int q ){
+    void reach( int q ) {
       int i = B.L[q];
       if( i >= rr ){
         B.E[i] = B.E[rr]; B.L[B.E[i]] = i;
@@ -364,10 +365,11 @@ public class Automaton {
     /**
      * Default constructor. It just initializes the field members.
      */
-    public List<String> getLabel(){
+    public List<String> getLabel() {
         return label;
     }
-    public Automaton(){
+
+    public Automaton() {
         TRUE_FALSE_AUTOMATON = false;
         A = new ArrayList<List<Integer>>();
         NS = new ArrayList<NumberSystem>();
@@ -379,6 +381,7 @@ public class Automaton {
         labelSorted = false;
         dk.brics.automaton.Automaton.setMinimization(dk.brics.automaton.Automaton.MINIMIZE_HOPCROFT);
     }
+
     /**
      * Initializes a special automaton: true or false.
      * A true automaton, is an automaton that accepts everything. A false automaton is an automaton that accepts nothing.
@@ -389,6 +392,7 @@ public class Automaton {
         TRUE_FALSE_AUTOMATON = true;
         this.TRUE_AUTOMATON = TRUE_AUTOMATON;
     }
+
     /**
      * Takes a regular expression and the alphabet for that regular expression and constructs the corresponding automaton.
      * For example if the regularExpression = "01*" and alphabet = [0,1,2], then the resulting automaton accepts
@@ -567,6 +571,7 @@ public class Automaton {
             throw new Exception("file does not exit: " + address);
         }
     }
+
     /**
      * returns a deep copy of this automaton.
      * @return a deep copy of this automaton
@@ -608,12 +613,14 @@ public class Automaton {
         listOfLabelsToQuantify.add(labelToQuantify);
         quantify(listOfLabelsToQuantify,print,prefix,log);
     }
+
     public void quantify(String labelToQuantify1,String labelToQuantify2,boolean leadingZeros,boolean print, String prefix,StringBuffer log)throws Exception{
         Set<String> listOfLabelsToQuantify = new HashSet<String>();
         listOfLabelsToQuantify.add(labelToQuantify1);
         listOfLabelsToQuantify.add(labelToQuantify2);
         quantify(listOfLabelsToQuantify,print,prefix,log);
     }
+
     /**
      * This method computes the existential quantification of this automaton.
      * Takes a list of labels and performs the existential quantifier over
@@ -646,6 +653,7 @@ public class Automaton {
         else
             fixTrailingZerosProblem(print,prefix,log);
     }
+
     /**
      * This method is very similar to public void quantify(Set<String> listOfLabelsToQuantify,boolean leadingZeros)throws Exception
      * with the exception that, this method does not deal with leading/trailing zeros problem.
@@ -727,6 +735,7 @@ public class Automaton {
             System.out.println(msg);
         }
     }
+
     /**
      * this automaton should not be a word automaton (automaton with output). However, it can be non deterministic.
      * @return the reverse of this automaton
@@ -778,6 +787,7 @@ public class Automaton {
             System.out.println(msg);
         }
     }
+
     /**
      * This method is used in and, or, not, and many others.
      * This automaton and M should have TRUE_FALSE_AUTOMATON = false.
@@ -936,21 +946,38 @@ public class Automaton {
         }
         return N;
     }
+
     /**
      * @param M
      * @return this automaton and M.
      * @throws Exception
 
      */
-    public Automaton and(Automaton M, boolean print, String prefix, StringBuffer log) throws Exception{
-        if((TRUE_FALSE_AUTOMATON && TRUE_AUTOMATON) && (M.TRUE_FALSE_AUTOMATON && M.TRUE_AUTOMATON)) return new Automaton(true);
-        if((TRUE_FALSE_AUTOMATON && !TRUE_AUTOMATON) || (M.TRUE_FALSE_AUTOMATON && !M.TRUE_AUTOMATON)) return new Automaton(false);
+    public Automaton and(
+        Automaton M,
+        boolean print,
+        String prefix,
+        StringBuffer log) throws Exception {
+        if((TRUE_FALSE_AUTOMATON && TRUE_AUTOMATON) &&
+            (M.TRUE_FALSE_AUTOMATON && M.TRUE_AUTOMATON)) {
+            return new Automaton(true);
+        }
 
-        if(TRUE_FALSE_AUTOMATON && TRUE_AUTOMATON)return M;
-        if(M.TRUE_FALSE_AUTOMATON && M.TRUE_AUTOMATON)return this;
+        if((TRUE_FALSE_AUTOMATON && !TRUE_AUTOMATON) ||
+            (M.TRUE_FALSE_AUTOMATON && !M.TRUE_AUTOMATON)) {
+            return new Automaton(false);
+        }
+
+        if(TRUE_FALSE_AUTOMATON && TRUE_AUTOMATON) {
+            return M;
+        }
+
+        if(M.TRUE_FALSE_AUTOMATON && M.TRUE_AUTOMATON) {
+            return this;
+        }
 
         long timeBefore = System.currentTimeMillis();
-        if(print){
+        if(print) {
             String msg = prefix + "computing &:" + Q + " states - " + M.Q + " states";
             log.append(msg + UtilityMethods.newLine());
             System.out.println(msg);
@@ -968,6 +995,7 @@ public class Automaton {
 
         return N;
     }
+
     /**
      * @param M
      * @return  this automaton or M
@@ -1003,6 +1031,7 @@ public class Automaton {
 
         return N;
     }
+
     /**
      *
      * @param M
@@ -1048,6 +1077,7 @@ public class Automaton {
         }
         return N;
     }
+
     /**
      * @param M
      * @return  this automaton imply M
@@ -1084,6 +1114,7 @@ public class Automaton {
 
         return N;
     }
+
     /**
      * @param M
      * @return  this automaton iff M
@@ -1128,6 +1159,7 @@ public class Automaton {
 
         return N;
     }
+
     /**
      * @return changes this automaton to its negation
      * @throws Exception
@@ -1171,6 +1203,7 @@ public class Automaton {
         dk.brics.automaton.Automaton X = to_dk_bricks_automaton();
         return X.equals(Y);
     }
+
     public void applyAllRepresentations() throws Exception{
         boolean flag = false;
         if(label == null || label.size() != A.size()){
@@ -1191,17 +1224,20 @@ public class Automaton {
             unlabel();
         copy(K);
     }
-    private void randomLabel(){
+
+    private void randomLabel() {
         if(label == null)label = new ArrayList<String>();
         else if(label.size() > 0)label = new ArrayList<String>();
         for(int i = 0 ; i < A.size();i++){
             label.add(Integer.toString(i));
         }
     }
+
     private void unlabel(){
         label = new ArrayList<String>();
         labelSorted = false;
     }
+
     private void copy(Automaton M){
         TRUE_FALSE_AUTOMATON = M.TRUE_FALSE_AUTOMATON;
         TRUE_AUTOMATON = M.TRUE_AUTOMATON;
@@ -1217,6 +1253,7 @@ public class Automaton {
         labelSorted = M.labelSorted;
         d = M.d;
     }
+
     /**
      * This method adds a dead state to totalize the transition function
      * @throws Exception
@@ -1258,6 +1295,7 @@ public class Automaton {
             System.out.println(msg);
         }
     }
+
     /**
      * The operator can be one of "<" ">" "=" "!=" "<=" ">=".
      * For example if operator = "<" then this method returns
@@ -1285,6 +1323,7 @@ public class Automaton {
         }
         return M;
     }
+
     /**
      * The operator can be one of "<" ">" "=" "!=" "<=" ">=".
      * For example if operator = "<" then this method changes the word automaton
@@ -1362,6 +1401,7 @@ public class Automaton {
             e2.printStackTrace();
         }
     }
+
     private void writeAlphabet(PrintWriter out){
         for(int i = 0; i < A.size();i++){
             List<Integer> l = A.get(i);
@@ -1386,6 +1426,7 @@ public class Automaton {
         }
         out.write(UtilityMethods.newLine());
     }
+
     private void writeState(PrintWriter out,int q){
         out.write(q + " " + Integer.toString(O.get(q))+UtilityMethods.newLine());
         for(int n: d.get(q).keySet()){
@@ -1398,6 +1439,7 @@ public class Automaton {
             out.write(UtilityMethods.newLine());
         }
     }
+
     /**
      * Writes down this automaton to a .gv file given by the address. It uses the predicate that
      * caused this automaton as the label of this drawing.
@@ -1494,6 +1536,7 @@ public class Automaton {
         }
         return res;
     }
+
     private void write_matrix_for_a_variable_value_pair(String variable, int value, int index, StringBuffer s){
         s.append(UtilityMethods.newLine() + "M_"+variable+"_"+value+" := Matrix([");
         Set<Integer> encoded_values = new HashSet<Integer>();
@@ -1528,6 +1571,7 @@ public class Automaton {
         }
         s.append("]);" + UtilityMethods.newLine());
     }
+
     private void write_initial_state_vector(StringBuffer s){
         s.append("# The row vector u denotes the indicator vector of the (singleton)" + UtilityMethods.newLine());
         s.append("# set of initial states." + UtilityMethods.newLine());
@@ -1585,6 +1629,7 @@ public class Automaton {
             System.out.println(msg);
         }
     }
+
     /**
      * Uses the Hopcroft minimization algorithm of the package dk.brics.automaton to minimize this automaton.
      */
@@ -1599,6 +1644,7 @@ public class Automaton {
         }
         setThisAutomatonToRepresent(M);
     }
+
     /**
      * Transform this automaton from Automaton to dk.bricks.automaton.Automaton. This automaton can be
      * any automaton (deterministic/non-deterministic and with output/without output).
@@ -1636,6 +1682,7 @@ public class Automaton {
         M.setDeterministic(deterministic);
         return M;
     }
+
     /**
      * Set the fields of this automaton to represent a dk.brics.automaton.Automaton.
      * An automata in our program can be of type Automaton or dk.brics.automaton.Automaton. We use package
@@ -1667,13 +1714,14 @@ public class Automaton {
             }
         }
     }
+
     /**
-    *  Sorts states in Q based on their breadth-first order. It also calls sortLabel().
-    *  The method also removes states that are not reachable from the initial state.
-    *  In draw() and write() methods, we first call the canonize the automaton.
-    *  It is also used in write() method.
-    *  Note that before we try to canonize, we check if this automaton is already canonized.
-     * @throws Exception
+     *  Sorts states in Q based on their breadth-first order. It also calls sortLabel().
+     *  The method also removes states that are not reachable from the initial state.
+     *  In draw() and write() methods, we first call the canonize the automaton.
+     *  It is also used in write() method.
+     *  Note that before we try to canonize, we check if this automaton is already canonized.
+     *  @throws Exception
      */
     public void canonize(){
         sortLabel();
@@ -1739,7 +1787,7 @@ public class Automaton {
      *  Note that before we try to sort, we check if the label is already sorted.
      *  The label cannot have repeated element.
      */
-    protected void sortLabel(){
+    protected void sortLabel() {
         if(labelSorted)return;
         labelSorted = true;
         if(TRUE_FALSE_AUTOMATON)return;
@@ -1799,6 +1847,7 @@ public class Automaton {
             d.set(q,permuted_d);
         }
     }
+
     /**
      * Input to dk.brics.automaton.Automata is a char. Input to Automaton is List<Integer>.
      * Thus this method transforms an integer to its corresponding List<Integer>
@@ -1820,6 +1869,7 @@ public class Automaton {
         }
         return l;
     }
+
     /**
      * Input to dk.brics.automaton.Automata is a char. Input to Automata.Automaton is List<Integer>.
      * Thus this method transforms a List<Integer> to its corresponding integer.
@@ -1859,6 +1909,7 @@ public class Automaton {
         }
         return encoding;
     }
+
     private int encode(List<Integer> l,List<List<Integer>> A,List<Integer> encoder){
         int encoding = 0;
         for(int i = 0 ; i < l.size();i++){
@@ -1866,6 +1917,7 @@ public class Automaton {
         }
         return encoding;
     }
+
     /**A wildcard is denoted by null in L. What do we mean by expanding wildcard?
      * Here is an example: suppose that A = [[1,2],[0,-1],[3,4,5]] and L = [1,*,4]. Then the method would return
      * [[1,0,4],[1,-1,4]]. In other words, it'll replace * in the second position with 0 and -1.
@@ -1887,12 +1939,14 @@ public class Automaton {
         }
         return R;
     }
+
     public void bind(String a)throws Exception{
         if(TRUE_FALSE_AUTOMATON || A.size() != 1)throw new Exception("invalid use of method bind");
         if(label == null || label.size()!=0)label = new ArrayList<String>();
         label.add(a);
         labelSorted = false;
     }
+
     public void bind(String a,String b)throws Exception{
         if(TRUE_FALSE_AUTOMATON || A.size() != 2)throw new Exception("invalid use of method bind");
         if(label == null || label.size()!=0)label = new ArrayList<String>();
@@ -1901,6 +1955,7 @@ public class Automaton {
         labelSorted = false;
         removeSameInputs(0);
     }
+
     public void bind(String a,String b,String c)throws Exception{
         if(TRUE_FALSE_AUTOMATON || A.size() != 3)throw new Exception("invalid use of method bind");
         if(label == null || label.size()!=0)label = new ArrayList<String>();
@@ -1909,6 +1964,7 @@ public class Automaton {
         canonized = false;
         removeSameInputs(0);
     }
+
     public void bind(List<String> names)throws Exception{
         if(TRUE_FALSE_AUTOMATON || A.size() != names.size())throw new Exception("invalid use of method bind");
         if(label == null || label.size()!=0)label = new ArrayList<String>();
@@ -1917,19 +1973,23 @@ public class Automaton {
         canonized = false;
         removeSameInputs(0);
     }
+
     public boolean isBound(){
         if(label == null || label.size() != A.size())
             return false;
         return true;
     }
+
     public int getArity(){
         if(TRUE_FALSE_AUTOMATON)return 0;
         return A.size();
     }
+
     /*public Type getTypeOfInput(int i)throws Exception{
         if(TRUE_FALSE_AUTOMATON || i >= T.size())throw new Exception("invalid use of method getTypeOfInput");
         return T.get(i);
     }*/
+
     /**clears this automaton*/
     private void clear(){
         A = null;
@@ -1941,12 +2001,14 @@ public class Automaton {
         canonized = false;
         labelSorted = false;
     }
+
     protected boolean isEmpty()throws Exception{
         if(TRUE_FALSE_AUTOMATON){
             return !TRUE_AUTOMATON;
         }
         return to_dk_bricks_automaton().isEmpty();
     }
+
     private void subsetConstruction(HashSet<Integer> initial_state,boolean print, String prefix, StringBuffer log)throws Exception{
         long timeBefore = System.currentTimeMillis();
         if(print){
@@ -2018,6 +2080,7 @@ public class Automaton {
             System.out.println(msg);
         }
     }
+
     private void fixLeadingZerosProblem(boolean print, String prefix,StringBuffer log)throws Exception{
         if(TRUE_FALSE_AUTOMATON)return;
         long timeBefore = System.currentTimeMillis();
@@ -2047,6 +2110,7 @@ public class Automaton {
             System.out.println(msg);
         }
     }
+
     private void fixTrailingZerosProblem(boolean print, String prefix,StringBuffer log) throws Exception{
         long timeBefore = System.currentTimeMillis();
         if(print){
@@ -2077,8 +2141,9 @@ public class Automaton {
             System.out.println(msg);
         }
     }
+
     /**Returns the set of states reachable from the initial state by reading 0*
-    */
+     */
     private HashSet<Integer> zeroReachableStates(){
         HashSet<Integer> result = new HashSet<Integer>();
         Queue<Integer> queue = new LinkedList<Integer>();
@@ -2129,6 +2194,7 @@ public class Automaton {
         }
         return result;
     }
+
     /**
      * For example, suppose that first = [1,2,3], second = [-1,4,2], and equalIndices = [-1,-1,1].
      * Then the result is [1,2,3,-1,4].
@@ -2151,6 +2217,7 @@ public class Automaton {
             }
         return R;
     }
+
     /**
      * Checks if any input has the same label as input i. It then removes copies of input i appropriately. So for example an
      * expression like f(a,a) becomes
@@ -2175,6 +2242,7 @@ public class Automaton {
         }
         removeSameInputs(i+1);
     }
+
     private void reduceDimension(List<Integer> I){
         List<List<Integer>> newAlphabet = new ArrayList<List<Integer>>();
         List<Integer> newEncoder = new ArrayList<Integer>();
@@ -2211,6 +2279,7 @@ public class Automaton {
             alphabetSize *= x.size();
         UtilityMethods.removeIndices(label, I);
     }
+
     private int mapToReducedEncodedInput(int n,List<Integer> I,List<Integer> newEncoder,List<List<Integer>> newAlphabet){
         if(I.size() <= 1)return n;
         List<Integer> x = decode(n);
