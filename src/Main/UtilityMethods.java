@@ -1,5 +1,5 @@
 /*	 Copyright 2016 Hamoon Mousavi
- * 
+ *
  * 	 This file is part of Walnut.
  *
  *   Walnut is free software: you can redistribute it and/or modify
@@ -46,8 +46,8 @@ public class UtilityMethods {
 	public static String get_address_for_custom_bases(){return dir+ADDRESS_FOR_CUSTOM_BASES;}
 	public static String get_address_for_words_library(){return dir+ADDRESS_FOR_WORDS_LIBRARY;}
 	public static String get_address_for_test_library(){return dir+ADDRESS_FOR_TEST_LIBRARY;}
-	
-	
+
+
 	public static String newLineString =  System.lineSeparator();
 	public static char min(char a,char b){
 		if(a < b)return a;
@@ -68,7 +68,7 @@ public class UtilityMethods {
 	public static boolean isNumber(String s){
 		return s.matches("^\\d+$");
 	}
-	
+
 	/**
 	 * permutes L with regard to permutation. For example if permutation = [1,2,0] then the return value is
 	 * [L[1],L[2],L[0]]
@@ -93,7 +93,7 @@ public class UtilityMethods {
 			if(i == 0)s+=l.get(i);
 			else s += ","+l.get(i);
 		}
-			
+
 		return s + ")";
 	}
 	/**
@@ -171,9 +171,9 @@ public class UtilityMethods {
 		String[] part = s.split("\\s+");
 		StringBuffer b = new StringBuffer();
 		for(String x:part){
-			b.append(x); 
+			b.append(x);
 		}
 		return Integer.parseInt(b.toString());
 	}
-	
+
 }

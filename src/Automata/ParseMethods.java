@@ -1,5 +1,5 @@
 /*	 Copyright 2016 Hamoon Mousavi
- * 
+ *
  * 	 This file is part of Walnut.
  *
  *   Walnut is free software: you can redistribute it and/or modify
@@ -30,25 +30,25 @@ import Main.UtilityMethods;
 public class ParseMethods {
 	static String REGEXP_FOR_TRUE_FALSE = "^\\s*(true|false)\\s*$";
 	static Pattern PATTERN_FOR_TRUE_FALSE = Pattern.compile(REGEXP_FOR_TRUE_FALSE);
-	
+
 	static String REGEXP_FOR_ALPHABET_DECLARATION = "^(\\s*((((msd|lsd)_(\\d+|\\w+))|((msd|lsd)(\\d+|\\w+))|(msd|lsd)|(\\d+|\\w+))|(\\{\\s*(\\+|\\-)?\\s*\\d+\\s*(\\s*,\\s*(\\+|\\-)?\\s*\\d+\\s*)*\\}))\\s*)+\\s*$";
 
 	static String NEXT_ALPHABET_TOKEN = "\\G\\s*((((msd|lsd)_(\\d+|\\w+))|((msd|lsd)(\\d+|\\w+))|(msd|lsd)|(\\d+|\\w+))|(\\{\\s*((\\+|\\-)?\\s*\\d+\\s*(\\s*,\\s*(\\+|\\-)?\\s*\\d+)*)\\s*\\}))\\s*";
 	static Pattern PATTERN_NEXT_ALPHABET_TOKEN = Pattern.compile(NEXT_ALPHABET_TOKEN);
 	static int ALPHABET_SET = 12;
 	static int ALPHABET_NUMBER_SYSTEM = 2;
-	
+
 	static String ELEMENT = "\\G\\s*,?\\s*(((\\+|\\-)?\\s*\\d+)|\\*)";
 	static Pattern PATTERN_ELEMENT = Pattern.compile(ELEMENT);
-	
+
 	static String REGEXP_FOR_STATE_DECLARATION = "^\\s*(\\d+)\\s+((\\+|\\-)?\\s*\\d+)\\s*$";
 	static Pattern PATTERN_FOR_STATE_DECLARATION = Pattern.compile(REGEXP_FOR_STATE_DECLARATION);
 	static int STATE_DECLARATION_STATE_NAME = 1,STATE_DECLARATION_OUTPUT = 2;
-	
+
 	static String REGEXP_FOR_TRANSITION = "^\\s*((((\\+|\\-)?\\s*\\d+\\s*)|(\\s*\\*\\s*))+)\\s*\\->\\s*((\\d+\\s*)+)\\s*$";
 	static Pattern PATTERN_FOR_TRANSITION = Pattern.compile(REGEXP_FOR_TRANSITION);
 	static int TRANSITION_INPUT = 1,TRANSITION_DESTINATION = 6;
-	
+
 	public static boolean parseTrueFalse(String s,boolean[] singleton){
 		Matcher m = PATTERN_FOR_TRUE_FALSE.matcher(s);
 		if(m.find()){
@@ -57,7 +57,9 @@ public class ParseMethods {
 		}
 		return false;
 	}
-	public static boolean parseAlphabetDeclaration(String s,List<List<Integer>> A,List<NumberSystem> bases) throws Exception{
+	public static boolean parseAlphabetDeclaration(
+		String s,List<List<Integer>> A,
+		List<NumberSystem> bases) throws Exception{
 		//if(!s.matches(REGEXP_FOR_ALPHABET_DECLARATION))return false;
 		Matcher m = PATTERN_NEXT_ALPHABET_TOKEN.matcher(s);
 		int index = 0;

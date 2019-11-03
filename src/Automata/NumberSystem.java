@@ -117,94 +117,123 @@ public class NumberSystem {
 
 	public NumberSystem(String name) throws Exception{
 		this.name = name;
-		String msd_or_lsd = name.substring(0,name.indexOf("_"));
+		String msd_or_lsd = name.substring(0, name.indexOf("_"));
 		is_msd = msd_or_lsd.equals("msd");
-		String base = name.substring(name.indexOf("_")+1);
+		String base = name.substring(name.indexOf("_") + 1);
+
 		/**
 		 * When the number system does not exits, we try to see whether its complement exists or not.
 		 * For example lsd_2 is the complement of msd_2.
 		 */
 		String complementName = (is_msd ? "lsd":"msd")+"_" + base;
-		String addressForTheSetOfAllRepresentations = UtilityMethods.get_address_for_custom_bases()+name+".txt";
-		String complement_addressForTheSetOfAllRepresentations = UtilityMethods.get_address_for_custom_bases()+complementName+".txt";
-		String addressForAddition = UtilityMethods.get_address_for_custom_bases()+name+"_addition.txt";
-		String complement_addressForAddition = UtilityMethods.get_address_for_custom_bases()+complementName+"_addition.txt";
-		String addressForLessThan = UtilityMethods.get_address_for_custom_bases()+name+"_less_than.txt";
-		String complement_addressForLessThan = UtilityMethods.get_address_for_custom_bases()+complementName+"_less_than.txt";
+		String addressForTheSetOfAllRepresentations = UtilityMethods.get_address_for_custom_bases() + name + ".txt";
+		String complement_addressForTheSetOfAllRepresentations = UtilityMethods.get_address_for_custom_bases() + complementName + ".txt";
+		String addressForAddition = UtilityMethods.
+			get_address_for_custom_bases() + name + "_addition.txt";
+		String complement_addressForAddition = UtilityMethods.
+			get_address_for_custom_bases() + complementName + "_addition.txt";
+		String addressForLessThan = UtilityMethods.
+			get_address_for_custom_bases() + name + "_less_than.txt";
+		String complement_addressForLessThan = UtilityMethods.
+			get_address_for_custom_bases() + complementName + "_less_than.txt";
 
 		//addition
-		if(new File(addressForAddition).isFile())
+		if(new File(addressForAddition).isFile()) {
 			addition = new Automaton(addressForAddition);
-		else if(new File(complement_addressForAddition).isFile()){
+		} else if(new File(complement_addressForAddition).isFile()) {
 			addition = new Automaton(complement_addressForAddition);
 			addition.reverse(false,null,null);
+		} else {
+			if(UtilityMethods.isNumber(base) && Integer.parseInt(base) > 1) {
+				base_n_addition(Integer.parseInt(base));
+			} else {
+				throw new Exception("Number system " + name + " is not defined.");
+			}
 		}
-		else{
-			if(UtilityMethods.isNumber(base) && Integer.parseInt(base) > 1) base_n_addition(Integer.parseInt(base));
-			else throw new Exception("number system " + name + " is not defined");
-		}
+
 		/**
 		 * The alphabet of all inputs of addition automaton must be equal. It must contain 0 and 1.
 		 * The addition automata must have 3 inputs.
 		 * All 3 inputs must be of type arithmetic.
 		 */
-		if(addition.A == null || addition.A.size() != 3)
-			throw new Exception("the addition automaton must have exactly 3 inputs: base " + name);
-		if(!addition.A.get(0).contains(0))
-			throw new Exception("the input alphabet of addition automaton must contain 0: base "+name);
-		if(!addition.A.get(0).contains(1))
-			throw new Exception("the input alphabet of addition automaton must contain 1: base "+name);
-
-		for(int i =1; i < addition.A.size();i++){
-			if(!UtilityMethods.areEqual(addition.A.get(i),addition.A.get(0)))
-				throw new Exception("all 3 inputs of the addition automaton must have the same alphabet: base " + name);
-
+		if(addition.A == null || addition.A.size() != 3) {
+			throw new Exception(
+				"The addition automaton must have exactly 3 inputs: base " + name);
 		}
-		for(int i = 0; i < addition.A.size();i++){
+
+		if(!addition.A.get(0).contains(0)) {
+			throw new Exception(
+				"The input alphabet of addition automaton must contain 0: base " + name);
+		}
+
+		if(!addition.A.get(0).contains(1)) {
+			throw new Exception(
+				"The input alphabet of addition automaton must contain 1: base " + name);
+		}
+
+		for(int i = 1; i < addition.A.size(); i++) {
+			if(!UtilityMethods.areEqual(addition.A.get(i), addition.A.get(0))) {
+				throw new Exception(
+					"All 3 inputs of the addition automaton " +
+					"must have the same alphabet: base " + name);
+			}
+		}
+
+		for(int i = 0; i < addition.A.size(); i++) {
 			addition.NS.set(i, this);
 		}
 
-
 		//lessThan
-		if(new File(addressForLessThan).isFile()){
+		if(new File(addressForLessThan).isFile()) {
 			lessThan = new Automaton(addressForLessThan);
-		}
-		else if(new File(complement_addressForLessThan).isFile()){
+		} else if(new File(complement_addressForLessThan).isFile()) {
 			lessThan = new Automaton(complement_addressForLessThan);
 			lessThan.reverse(false,null,null);
+		} else {
+			lexicographicLessThan(addition.A.get(0));
 		}
-		else lexicographicLessThan(addition.A.get(0));
+
 		/**
 		 * The lessThan automata must have 2 inputs.
 		 * All 2 inputs must be of type arithmetic.
 		 * Inputs must have the same alphabet as the addition automaton.
 		 */
-		if(lessThan.A == null || lessThan.A.size() != 2)
-			throw new Exception("the less_than automaton must have exactly 2 inputs: base " + name);
-		for(int i =0; i < lessThan.A.size();i++){
-			if(!UtilityMethods.areEqual(lessThan.A.get(i),addition.A.get(0)))
-				throw new Exception("inputs of the less_than automaton must have the same alphabet as the alphabet of inputs of addition automaton: base " + name);
-			lessThan.NS.set(i,this);
+		if(lessThan.A == null || lessThan.A.size() != 2) {
+			throw new Exception(
+				"The less_than automaton must have exactly 2 inputs: base " + name);
+		}
+
+		for(int i =0; i < lessThan.A.size();i++) {
+			if(!UtilityMethods.areEqual(lessThan.A.get(i),addition.A.get(0))) {
+				throw new Exception(
+					"Inputs of the less_than automaton must have the same alphabet " +
+					"as the alphabet of inputs of addition automaton: base " + name);
+			}
+
+			lessThan.NS.set(i, this);
 		}
 
 		setEquality(addition.A.get(0));
 
 
 		//the set of all representations
-		if(new File(addressForTheSetOfAllRepresentations).isFile())
+		if(new File(addressForTheSetOfAllRepresentations).isFile()) {
 			allRepresentations = new Automaton(addressForTheSetOfAllRepresentations);
-		else if(new File(complement_addressForTheSetOfAllRepresentations).isFile()){
+		} else if(new File(complement_addressForTheSetOfAllRepresentations).isFile()) {
 			allRepresentations = new Automaton(complement_addressForTheSetOfAllRepresentations);
 			allRepresentations.reverse(false,null,null);
-		}
-		else{
+		} else {
 			flag_should_we_use_allRepresentations = false;
 		}
-		if(flag_should_we_use_allRepresentations){
-			for(int i = 0 ; i < allRepresentations.NS.size();i++)
+
+		if(flag_should_we_use_allRepresentations) {
+			for(int i = 0 ; i < allRepresentations.NS.size(); i++) {
 				allRepresentations.NS.set(i, this);
+			}
+
 			applyAllRepresentations();
 		}
+
 		constantsDynamicTable = new HashMap<Integer, Automaton>();
 		multiplicationsDynamicTable = new HashMap<>();
 		divisionsDynamicTable = new HashMap<>();

@@ -470,49 +470,68 @@ public class Automaton {
     public Automaton(String address)throws Exception{
         this();
         final String REGEXP_FOR_WHITESPACE = "^\\s*$";
-        int lineNumber = 0;//lineNumber will be used in error messages
+
+        //lineNumber will be used in error messages
+        int lineNumber = 0;
         alphabetSize = 1;
-        try{
-            BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(address), "utf-8"));
+
+        try {
+            BufferedReader in = new BufferedReader(
+                new InputStreamReader(new FileInputStream(address), "utf-8"));
             String line;
             boolean[] singleton = new boolean[1];
-            while((line = in.readLine())!= null){
+            while((line = in.readLine())!= null) {
                 lineNumber++;
-                if(line.matches(REGEXP_FOR_WHITESPACE))continue;
-                else if(ParseMethods.parseTrueFalse(line, singleton)){
+                if(line.matches(REGEXP_FOR_WHITESPACE)) {
+                    // Ignore blank lines.
+                    continue;
+                } else if(ParseMethods.parseTrueFalse(line, singleton)) {
+                    // It is a true/false automaton.
                     TRUE_FALSE_AUTOMATON = true;
                     TRUE_AUTOMATON = singleton[0];
-                    in.close();return;
-                }
-                else{
+                    in.close();
+                    return;
+                } else {
                     boolean flag = false;
-                    try{
-                        flag = ParseMethods.parseAlphabetDeclaration(line,A,NS);
-                    }catch(Exception e){
+                    try {
+                        flag = ParseMethods.parseAlphabetDeclaration(line, A, NS);
+                    } catch(Exception e){
                         in.close();
-                        throw new Exception(e.getMessage()+UtilityMethods.newLine()+"\t:line "+ lineNumber + " of file " + address);
+                        throw new Exception(
+                            e.getMessage() + UtilityMethods.newLine() +
+                            "\t:line "+ lineNumber + " of file " + address);
                     }
-                    if(flag){
-                        for(int i = 0; i < A.size();i++){
-                            if(NS.get(i) != null && (!A.get(i).contains(0)||!A.get(i).contains(1))){
+
+                    if(flag) {
+                        for(int i = 0; i < A.size();i++) {
+                            if(NS.get(i) != null &&
+                                (!A.get(i).contains(0) || !A.get(i).contains(1))) {
                                 in.close();
-                                throw new Exception("the "+ (i+1) +"th input of type arithmetic of the automaton declared in file " +address+ " requires 0 and 1 in its input alphabet: line " + lineNumber);
+                                throw new Exception(
+                                    "The " + (i + 1) + "th input of type arithmetic " +
+                                    "of the automaton declared in file " + address +
+                                    " requires 0 and 1 in its input alphabet: line " +
+                                    lineNumber);
                             }
                             UtilityMethods.removeDuplicates(A.get(i));
                             alphabetSize *= A.get(i).size();
                         }
+
                         break;
-                    }
-                    else{
+                    } else {
                         in.close();
-                        throw new Exception("undefined statement: line "+ lineNumber + " of file " + address);
+                        throw new Exception(
+                            "Undefined statement: line " +
+                            lineNumber + " of file " + address);
                     }
                 }
             }
+
             int[] pair = new int[2];
             List<Integer> input = new ArrayList<Integer>();
             List<Integer> dest = new ArrayList<Integer>();
-            int currentState = -1,currentOutput;
+            int currentState = -1;
+            int currentOutput;
             TreeMap<Integer,List<Integer>> currentStateTransitions = new TreeMap<>();
             TreeMap<Integer,Integer> state_output = new TreeMap<Integer,Integer>();
             TreeMap<Integer,TreeMap<Integer,List<Integer>>> state_transition = new TreeMap<Integer,TreeMap<Integer,List<Integer>>>();
