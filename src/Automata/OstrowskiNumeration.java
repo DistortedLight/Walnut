@@ -52,8 +52,8 @@ public class OstrowskiNumeration {
     public String getName() { return name; }
 
     // The pre-period of the continued fraction.
-    ArrayList<Integer> pre_period;
-    public ArrayList<Integer> get_pre_period() { return pre_period; }
+    ArrayList<Integer> preperiod;
+    public ArrayList<Integer> getpre_period() { return preperiod; }
 
     // The pre-period of the continued fraction.
     ArrayList<Integer> period;
@@ -87,30 +87,46 @@ public class OstrowskiNumeration {
     Automaton adder;
     Automaton repr;
 
-    public OstrowskiNumeration(String name, String pre_period, String period) throws Exception {
+    public OstrowskiNumeration(String name, String preperiod, String period) throws Exception {
         this.name = name;
-        this.pre_period = new ArrayList<Integer>();
+        this.preperiod = new ArrayList<Integer>();
         this.period = new ArrayList<Integer>();
-        ParseMethods.parseList(pre_period, this.pre_period);
+        ParseMethods.parseList(preperiod, this.preperiod);
         ParseMethods.parseList(period, this.period);
 
 
         // Remove leading 0's in the preperiod.
-        Iterator<Integer> it = this.pre_period.iterator();
+        Iterator<Integer> it = this.preperiod.iterator();
         int first_non_zero = 0;
         while (it.hasNext() && it.next() == 0) ++first_non_zero;
-        this.pre_period.subList(0, first_non_zero).clear();
-        if (this.pre_period.size() == 0) {
-            this.pre_period.addAll(this.period);
+        this.preperiod.subList(0, first_non_zero).clear();
+
+        if (this.preperiod.size() == 0) {
+            // Easier implementation.
+            this.preperiod.addAll(this.period);
         }
 
-        assertValues(this.pre_period);
+        assertValues(this.preperiod);
         assertValues(this.period);
+
+        if (this.preperiod.get(0) == 1) {
+            // We want to restrict alpha < 1/2 because otherwise the first two place values in
+            // the number system will be 1, which is troublesome.
+            if (this.preperiod.size() > 1) {
+                this.preperiod.set(0, this.preperiod.get(1) + 1);
+                this.preperiod.remove(1);
+            } else {
+                this.preperiod.set(0, this.period.get(0) + 1);
+                this.period.add(this.period.get(0));
+                this.period.remove(0);
+            }
+        }
+
         this.alpha = new ArrayList<Integer>();
         this.alpha.add(0);
-        this.alpha.addAll(this.pre_period);
+        this.alpha.addAll(this.preperiod);
         this.alpha.addAll(this.period);
-        this.period_index = this.pre_period.size() + 1;
+        this.period_index = this.preperiod.size() + 1;
         this.sz_alpha = alpha.size();
 
         d_max = alpha.get(1) - 1;
@@ -266,6 +282,9 @@ public class OstrowskiNumeration {
     }
 
     private void assertValues(List<Integer> list) throws Exception {
+        if (list == null || list.size() == 0) {
+            throw new Exception("The period cannot be empty.");
+        }
         Iterator<Integer> it = list.iterator();
         while (it.hasNext()) {
             int d = it.next();
