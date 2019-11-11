@@ -1,5 +1,5 @@
 /*	 Copyright 2016 Hamoon Mousavi
- * 
+ *
  * 	 This file is part of Walnut.
  *
  *   Walnut is free software: you can redistribute it and/or modify
@@ -63,19 +63,20 @@ public class Predicate {
 	Matcher MATCHER_FOR_LEFT_PARENTHESIS;
 	Matcher MATCHER_FOR_RIGHT_PARENTHESIS;
 	Matcher MATCHER_FOR_WHITESPACE;
-	
+
 	static HashMap<String,NumberSystem> number_system_Hash = new HashMap<String,NumberSystem>();
 	public static HashMap<String,NumberSystem> get_number_system_Hash(){
 		return number_system_Hash;
 	}
+
 	static String REGEXP_FOR_LOGICAL_OPERATORS = "\\G\\s*(`|\\^|\\&|\\~|\\||=>|<=>|E|A)";
 	static String REGEXP_FOR_LIST_OF_QUANTIFIED_VARIABLES = "\\G\\s*((\\s*([a-zA-Z&&[^AE]]\\w*)\\s*)(\\s*,\\s*([a-zA-Z&&[^AE]]\\w*)\\s*)*)";
 	static String REGEXP_FOR_RELATIONAL_OPERATORS = "\\G\\s*(>=|<=|<|>|=|!=)";
 	static String REGEXP_FOR_ARITHMETIC_OPERATORS = "\\G\\s*(/|\\*|\\+|\\-)";
 	static String REGEXP_FOR_NUMBER_SYSTEM = "\\G\\s*\\?(((msd|lsd)_(\\d+|\\w+))|((msd|lsd)(\\d+|\\w+))|(msd|lsd)|(\\d+|\\w+))";
-	static String REGEXP_FOR_WORD = "\\G\\s*([a-zA-Z&&[^AE]]\\w*)\\s*\\[";	
-	static String REGEXP_FOR_FUNCTION = "\\G\\s*\\$([a-zA-Z&&[^AE]]\\w*)\\s*\\(";	
-	static String REGEXP_FOR_MACRO = "\\G(\\s*)\\#([a-zA-Z&&[^AE]]\\w*)\\s*\\(";	
+	static String REGEXP_FOR_WORD = "\\G\\s*([a-zA-Z&&[^AE]]\\w*)\\s*\\[";
+	static String REGEXP_FOR_FUNCTION = "\\G\\s*\\$([a-zA-Z&&[^AE]]\\w*)\\s*\\(";
+	static String REGEXP_FOR_MACRO = "\\G(\\s*)\\#([a-zA-Z&&[^AE]]\\w*)\\s*\\(";
 	static String REGEXP_FOR_VARIABLE = "\\G\\s*([a-zA-Z&&[^AE]]\\w*)";
 	static String REGEXP_FOR_NUMBER_LITERAL = "\\G\\s*(\\d+)";
 	static String REGEXP_FOR_ALPHABET_LETTER = "\\G\\s*@(\\s*(\\+|\\-)?\\s*\\d+)";
@@ -119,7 +120,11 @@ public class Predicate {
 		MATCHER_FOR_RIGHT_PARENTHESIS = PATTERN_FOR_RIGHT_PARENTHESIS.matcher(predicate);
 		MATCHER_FOR_WHITESPACE = PATTERN_FOR_WHITESPACE.matcher(predicate);
 	}
-	public Predicate(String default_number_system,String predicate,int real_starting_position) throws Exception{
+
+	public Predicate(
+		String default_number_system,
+		String predicate,
+		int real_starting_position) throws Exception{
 		operator_Stack = new Stack<Operator>();
 		postOrder = new ArrayList<Token>();
 		this.real_starting_position = real_starting_position;
@@ -129,6 +134,7 @@ public class Predicate {
 		initialize_matchers();
 		tokenize_and_compute_post_order();
 	}
+
 	private void tokenize_and_compute_post_order() throws Exception{
 		Stack<String> number_system_Stack = new Stack<String>();
 		number_system_Stack.push(default_number_system);
@@ -141,28 +147,31 @@ public class Predicate {
 			if(MATCHER_FOR_LOGICAL_OPERATORS.find(index)){
 				lastTokenWasOperator = true;
 				Matcher matcher = MATCHER_FOR_LOGICAL_OPERATORS;
-				if(matcher.group(1).equals("E") || matcher.group(1).equals("A")){			
+				if(matcher.group(1).equals("E") || matcher.group(1).equals("A")){
 					if(!MATCHER_FOR_LIST_OF_QUANTIFIED_VARIABLES.find(matcher.end())){
-						throw new Exception("operator " + matcher.group(1) +" requires a list of variables: char at " + (real_starting_position+index));
+						throw new Exception(
+							"Operator " + matcher.group(1) +
+							" requires a list of variables: char at " +
+							(real_starting_position+index));
 					}
-					index = handle_quantifier(current_number_system);			
-				}
-				else{
-					op = new LogicalOperator(real_starting_position + matcher.start(1), matcher.group(1));
+
+					index = handle_quantifier(current_number_system);
+				} else {
+					op = new LogicalOperator(
+						real_starting_position + matcher.start(1), matcher.group(1));
 					op.put(postOrder,operator_Stack);
 					index = matcher.end();
 				}
-			}
-			else if(MATCHER_FOR_RELATIONAL_OPERATORS.find(index)){
+			} else if(MATCHER_FOR_RELATIONAL_OPERATORS.find(index)) {
 				lastTokenWasOperator = true;
 				Matcher matcher = MATCHER_FOR_RELATIONAL_OPERATORS;
-				if(!number_system_Hash.containsKey(current_number_system))
+				if(!number_system_Hash.containsKey(current_number_system)) {
 					number_system_Hash.put(current_number_system, new NumberSystem(current_number_system));
+				}
 				op = new RelationalOperator(real_starting_position + matcher.start(1), matcher.group(1), number_system_Hash.get(current_number_system));
-				op.put(postOrder,operator_Stack);
+				op.put(postOrder, operator_Stack);
 				index = matcher.end();
-			}
-			else if(MATCHER_FOR_ARITHMETIC_OPERATORS.find(index)){
+			} else if(MATCHER_FOR_ARITHMETIC_OPERATORS.find(index)) {
 				lastTokenWasOperator = true;
 				Matcher matcher = MATCHER_FOR_ARITHMETIC_OPERATORS;
 				if(!number_system_Hash.containsKey(current_number_system))
@@ -170,75 +179,75 @@ public class Predicate {
 				op = new ArithmeticOperator(real_starting_position + matcher.start(1), matcher.group(1), number_system_Hash.get(current_number_system));
 				op.put(postOrder,operator_Stack);
 				index = matcher.end();
-			}
-			else if(MATCHER_FOR_WORD.find(index)){
-				if(!lastTokenWasOperator)throw new Exception("an operator is missing: char at " + (real_starting_position+index));
+			} else if(MATCHER_FOR_WORD.find(index)) {
+				if(!lastTokenWasOperator)throw new Exception(
+					"An operator is missing: char at " + (real_starting_position+index));
 				lastTokenWasOperator = false;
 				index = put_word(current_number_system);
-			}
-			else if(MATCHER_FOR_FUNCTION.find(index)){
-				if(!lastTokenWasOperator)throw new Exception("an operator is missing: char at " + (real_starting_position+index));
+			} else if(MATCHER_FOR_FUNCTION.find(index)) {
+				if(!lastTokenWasOperator)throw new Exception(
+					"An operator is missing: char at " + (real_starting_position+index));
 				lastTokenWasOperator = false;
 				index = put_function(current_number_system);
-			}
-			else if(MATCHER_FOR_MACRO.find(index)){
-				if(!lastTokenWasOperator)throw new Exception("an operator is missing: char at " + (real_starting_position+index));
+			} else if(MATCHER_FOR_MACRO.find(index)) {
+				if(!lastTokenWasOperator)throw new Exception(
+					"An operator is missing: char at " + (real_starting_position+index));
 				index = put_macro();
-			}
-			else if(MATCHER_FOR_VARIABLE.find(index)){
-				if(!lastTokenWasOperator)throw new Exception("an operator is missing: char at " + (real_starting_position+index));
+			} else if(MATCHER_FOR_VARIABLE.find(index)) {
+				if(!lastTokenWasOperator)throw new Exception(
+					"An operator is missing: char at " + (real_starting_position+index));
 				lastTokenWasOperator = false;
 				t = new Variable(real_starting_position + MATCHER_FOR_VARIABLE.start(1),MATCHER_FOR_VARIABLE.group(1));
 				t.put(postOrder);
 				index = MATCHER_FOR_VARIABLE.end();
-			}
-			else if(MATCHER_FOR_NUMBER_LITERAL.find(index)){
-				if(!lastTokenWasOperator)throw new Exception("an operator is missing: char at " + (real_starting_position+index));
+			} else if(MATCHER_FOR_NUMBER_LITERAL.find(index)) {
+				if(!lastTokenWasOperator)throw new Exception(
+					"An operator is missing: char at " + (real_starting_position+index));
 				lastTokenWasOperator = false;
 				if(!number_system_Hash.containsKey(current_number_system))
 					number_system_Hash.put(current_number_system, new NumberSystem(current_number_system));
 				t = new NumberLiteral(real_starting_position + MATCHER_FOR_NUMBER_LITERAL.start(1),UtilityMethods.parseInt(MATCHER_FOR_NUMBER_LITERAL.group(1)),number_system_Hash.get(current_number_system));
 				t.put(postOrder);
 				index = MATCHER_FOR_NUMBER_LITERAL.end();
-			}
-			else if(MATCHER_FOR_ALPHABET_LETTER.find(index)){
+			} else if(MATCHER_FOR_ALPHABET_LETTER.find(index)) {
 				if(!lastTokenWasOperator)throw new Exception("an operator is missing: char at " + index);
 				lastTokenWasOperator = false;
 				t = new AlphabetLetter(real_starting_position + MATCHER_FOR_ALPHABET_LETTER.start(1),UtilityMethods.parseInt(MATCHER_FOR_ALPHABET_LETTER.group(1)));
 				t.put(postOrder);
 				index = MATCHER_FOR_ALPHABET_LETTER.end();
-			}
-			else if(MATCHER_FOR_NUMBER_SYSTEM.find(index)){
+			} else if(MATCHER_FOR_NUMBER_SYSTEM.find(index)) {
 				String tmp = derive_number_system();
 				number_system_Stack.push(tmp);
 				current_number_system = tmp;
 				index = MATCHER_FOR_NUMBER_SYSTEM.end();
-			}
-			else if(MATCHER_FOR_LEFT_PARENTHESIS.find(index)){
+			} else if(MATCHER_FOR_LEFT_PARENTHESIS.find(index)) {
 				op = new LeftParenthesis(real_starting_position + index);
 				op.put(postOrder,operator_Stack);
 				number_system_Stack.push("(");
 				index = MATCHER_FOR_LEFT_PARENTHESIS.end();
-			}
-			else if(MATCHER_FOR_RIGHT_PARENTHESIS.find(index)){
+			} else if(MATCHER_FOR_RIGHT_PARENTHESIS.find(index)) {
 				op = new RightParenthesis(real_starting_position + index);
 				op.put(postOrder,operator_Stack);
 				current_number_system = find_current_number_system_in_stack(number_system_Stack);
 				index = MATCHER_FOR_RIGHT_PARENTHESIS.end();
-			}
-			else if(MATCHER_FOR_WHITESPACE.find(index)){
+			} else if(MATCHER_FOR_WHITESPACE.find(index)) {
 				index = MATCHER_FOR_WHITESPACE.end();
-			}
-			else{
+			} else {
 				throw new Exception("undefined token: at char "+(real_starting_position + index));
 			}
 		}
+
 		while(!operator_Stack.isEmpty()){
 			op = operator_Stack.pop();
-			if(op.isLeftParenthesis())throw new Exception("unbalanced parenthesis: char at " + op.getPositionInPredicate());
-			else postOrder.add(op);
+			if(op.isLeftParenthesis()) {
+				throw new Exception(
+					"Unbalanced parenthesis: char at " + op.getPositionInPredicate());
+			} else {
+				postOrder.add(op);
+			}
 		}
 	}
+
 	private String find_current_number_system_in_stack(Stack<String> number_system_Stack){
 		String current_number_system = default_number_system;
 		while(!number_system_Stack.isEmpty()){
@@ -282,9 +291,9 @@ public class Predicate {
 		String r_leftBracket = "\\G\\s*\\[";
 		Pattern p_leftBracket = Pattern.compile(r_leftBracket);
 		Matcher m_leftBracket = p_leftBracket.matcher(predicate);
-		
+
 		Automaton A = new Automaton(UtilityMethods.get_address_for_words_library()+matcher.group(1)+".txt");
-		
+
 		Stack<Character> bracket_Stack = new Stack<Character>();
 		bracket_Stack.push('[');
 		int i = matcher.end();
@@ -328,9 +337,9 @@ public class Predicate {
 		w.put(postOrder);
 		return i+1;
 	}
-	private int put_function(String default_number_system)throws Exception{		
+	private int put_function(String default_number_system)throws Exception{
 		Matcher matcher = MATCHER_FOR_FUNCTION;
-		Automaton A = new Automaton(UtilityMethods.get_address_for_automata_library()+matcher.group(1)+".txt");	
+		Automaton A = new Automaton(UtilityMethods.get_address_for_automata_library()+matcher.group(1)+".txt");
 		Stack<Character> parenthesis_Stack = new Stack<Character>();
 		parenthesis_Stack.push('(');
 		int i = matcher.end();
@@ -359,7 +368,7 @@ public class Predicate {
 			}
 			else{
 				buf.append(ch);
-				if(ch == '('){	
+				if(ch == '('){
 
 					parenthesis_Stack.push('(');
 				}
@@ -379,13 +388,13 @@ public class Predicate {
 		f.put(postOrder);
 		return i+1;
 	}
-	
-	private int put_macro()throws Exception{		
+
+	private int put_macro()throws Exception{
 		Matcher matcher = MATCHER_FOR_MACRO;
-		
+
 		String macro = "";
 		try{
-			BufferedReader in = 
+			BufferedReader in =
 					new BufferedReader(
 							new InputStreamReader(
 									new FileInputStream(
@@ -425,7 +434,7 @@ public class Predicate {
 			}
 			else{
 				buf.append(ch);
-				if(ch == '('){	
+				if(ch == '('){
 					parenthesis_Stack.push('(');
 				}
 			}
@@ -438,7 +447,7 @@ public class Predicate {
 		initialize_matchers();
 		return matcher.start();
 	}
-	
+
 	public List<Token> get_postOrder(){
 		return postOrder;
 	}

@@ -1,5 +1,5 @@
 /*	 Copyright 2016 Hamoon Mousavi
- * 
+ *
  * 	 This file is part of Walnut.
  *
  *   Walnut is free software: you can redistribute it and/or modify
@@ -38,7 +38,7 @@ public class Computer {
 	String mpl;
 	boolean printSteps;
 	boolean printDetails;
-	public Computer(String predicate, boolean printSteps, boolean printDetails)throws Exception{
+	public Computer(String predicate, boolean printSteps, boolean printDetails) throws Exception {
 		this.log = new StringBuffer();
 		this.log_details = new StringBuffer();
 		mpl = "";
@@ -96,59 +96,67 @@ public class Computer {
 	public String toString(){
 		return result.toString();
 	}
-	private void compute() throws Exception{
+	private void compute() throws Exception {
 		Stack<Expression> expression_Stack = new Stack<Expression>();
 		List<Token> postOrder = predicate_object.get_postOrder();
-		String prefix ="";
+		String prefix = "";
 		long timeBeginning = System.currentTimeMillis();
 		String step,preStep;
-		for(Token t:postOrder){
+		for(Token t:postOrder) {
 			try{
 				long timeBefore = System.currentTimeMillis();
 				String operands = "";
-				t.act(expression_Stack,printDetails,prefix,log_details);
+				t.act(expression_Stack, printDetails, prefix, log_details);
 				long timeAfter = System.currentTimeMillis();
-				if(t.isOperator() && expression_Stack.peek().is(Type.automaton)){
-					step = prefix + expression_Stack.peek() + ":" + expression_Stack.peek().M.Q +" states - " + (timeAfter-timeBefore)+"ms";
+				if(t.isOperator() && expression_Stack.peek().is(Type.automaton)) {
+					step = prefix + expression_Stack.peek() + ":" +
+						expression_Stack.peek().M.Q + " states - " + (timeAfter-timeBefore) + "ms";
 					log.append(step + UtilityMethods.newLine());
 					log_details.append(step + UtilityMethods.newLine());
-					if(printSteps||printDetails){
+					if(printSteps || printDetails) {
 						System.out.println(step);
 					}
+
 					prefix += " ";
 				}
-			}catch(Exception e){
+			} catch(Exception e) {
 				e.printStackTrace();
 				String message = e.getMessage();
-				message += UtilityMethods.newLine() + "\t: char at "+t.getPositionInPredicate();
+				message += UtilityMethods.newLine() + "\t: char at " + t.getPositionInPredicate();
 				throw new Exception(message);
 			}
 		}
+
 		long timeEnd = System.currentTimeMillis();
-		step = "total computation time: " + (timeEnd - timeBeginning)+"ms";
+		step = "Total computation time: " + (timeEnd - timeBeginning) + "ms.";
 		log.append(step);
 		log_details.append(step);
-		if(printSteps||printDetails)System.out.println(step);
-		if(expression_Stack.size() > 1){
-			String message = "cannot evaluate the followings into a single automaton:"+UtilityMethods.newLine();
+		if(printSteps||printDetails) {
+			System.out.println(step);
+		}
+
+		if(expression_Stack.size() > 1) {
+			String message =
+				"Cannot evaluate the following into a single automaton:" +
+				UtilityMethods.newLine();
 			Stack<Expression> tmp = new Stack<Expression>();
-			
-			while(!expression_Stack.isEmpty())
+
+			while(!expression_Stack.isEmpty()) {
 				tmp.push(expression_Stack.pop());
-				
-			while(!tmp.isEmpty())
+			}
+
+			while(!tmp.isEmpty()) {
 				message += tmp.pop() + UtilityMethods.newLine();
-			
-			message += "probably some operators are missing";
+			}
+
+			message += "Probably some operators are missing.";
 			throw new Exception(message);
-		}
-		else if(expression_Stack.isEmpty()){
-			throw new Exception("evaluation ended in no result");
-		}
-		else if(expression_Stack.size() == 1){
+		} else if(expression_Stack.isEmpty()) {
+			throw new Exception("Evaluation ended in no result.");
+		} else if(expression_Stack.size() == 1) {
 			result = expression_Stack.pop();
 			if(!result.is(Type.automaton)){
-				throw new Exception("the final result of the evaluation is not of type " + Type.automaton);
+				throw new Exception("The final result of the evaluation is not of type " + Type.automaton);
 			}
 		}
 	}
