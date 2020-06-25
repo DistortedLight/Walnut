@@ -588,7 +588,7 @@ public class Automaton {
                 }
                 else{
                     in.close();
-                    throw new Exception("undefined statement: line "+ lineNumber + " of file " + address);
+                    throw new Exception("Undefined statement: line "+ lineNumber + " of file " + address);
                 }
             }
             in.close();
@@ -605,7 +605,7 @@ public class Automaton {
             }
         } catch (IOException e) {
             e.printStackTrace();
-            throw new Exception("file does not exit: " + address);
+            throw new Exception("File does not exist: " + address);
         }
     }
 
