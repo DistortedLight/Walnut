@@ -15,6 +15,7 @@ hs_err_pid*
 Result/
 Automata Library/
 Test Results/
+Custom Bases/
 
 # Directory for experiments
 scratch/

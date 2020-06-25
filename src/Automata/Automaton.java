@@ -2313,7 +2313,7 @@ public class Automaton {
         for(int j = i+1; j < A.size();j++){
             if(label.get(i) == label.get(j)){
                 if(!UtilityMethods.areEqual(A.get(i), A.get(j))){
-                    throw new Exception("input " + i + " and " +j + " are having the same label but different alphabets");
+                    throw new Exception("Inputs " + i + " and " + j + " have the same label but different alphabets.");
                 }
                 I.add(j);
             }

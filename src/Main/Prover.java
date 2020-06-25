@@ -38,7 +38,7 @@ import Automata.OstrowskiNumeration;
  * @author Hamoon
  */
 public class Prover {
-	static String REGEXP_FOR_THE_LIST_OF_COMMANDS = "(eval|def|macro|reg|load|ost|exit|quit)";
+	static String REGEXP_FOR_THE_LIST_OF_COMMANDS = "(eval|def|macro|reg|load|ost|exit|quit|cls|clear)";
 	static String REGEXP_FOR_EMPTY_COMMAND = "^\\s*(;|::|:)\\s*$";
 	/**
 	 * the high-level scheme of a command is a name followed by some arguments and ending in either ; : or ::
@@ -241,6 +241,8 @@ public class Prover {
 			regCommand(s);
 		} else if(commandName.equals("ost")) {
 			ostCommand(s);
+		} else if (commandName.equals("cls") || commandName.equals("clear")) {
+			clearScreen();
 		} else {
 			throw new Exception("Invalid command " + commandName + ".");
 		}
@@ -409,6 +411,11 @@ public class Prover {
 			m.group(GROUP_OST_PERIOD));
 		ostr.createRepresentationAutomaton();
 		ostr.createAdderAutomaton();
+	}
+
+	public static void clearScreen() {
+	    System.out.print("\033[H\033[2J");
+	    System.out.flush();
 	}
 
 	private static void which_matrices_to_compute(String s, List<String> L){
