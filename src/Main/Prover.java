@@ -329,6 +329,7 @@ public class Prover {
 		Computer c = new Computer(m.group(ED_PREDICATE), printSteps, printDetails);
 		c.write(UtilityMethods.get_address_for_result() + m.group(ED_NAME)+".txt");
 		c.drawAutomaton(UtilityMethods.get_address_for_result() + m.group(ED_NAME) + ".gv");
+
 		if(free_variables.size() > 0) {
 			c.writeMatrices(
 				UtilityMethods.get_address_for_result()+m.group(ED_NAME)+".mpl", free_variables);
@@ -345,6 +346,14 @@ public class Prover {
 		}
 
 		M = c.getTheFinalResult();
+		if (M.TRUE_FALSE_AUTOMATON) {
+			if (M.TRUE_AUTOMATON) {
+				System.out.println("____\nTRUE");
+			} else {
+				System.out.println("_____\nFALSE");
+			}
+		}
+
 		return new TestCase(s, M, "", c.mpl, printDetails ? c.log_details.toString() : "");
 	}
 

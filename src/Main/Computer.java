@@ -48,9 +48,11 @@ public class Computer {
 		this.printDetails = printDetails;
 		compute();
 	}
+
 	public Automaton getTheFinalResult(){
 		return result.M;
 	}
+
 	public void writeMatrices(String address, List<String> free_variables) throws Exception{
 		try {
 			mpl = result.M.write_matrices(address, free_variables);

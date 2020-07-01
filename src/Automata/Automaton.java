@@ -91,8 +91,8 @@ public class Automaton {
      * When TRUE_FALSE_AUTOMATON = true and TRUE_AUTOMATON = false then this is a false automaton.
      * When TRUE_FALSE_AUTOMATON = true and TRUE_AUTOMATON = true then this is a true automaton.
     */
-    boolean TRUE_FALSE_AUTOMATON = false;
-    boolean TRUE_AUTOMATON = false;
+    public boolean TRUE_FALSE_AUTOMATON = false;
+    public boolean TRUE_AUTOMATON = false;
 
     /**
      *  Input Alphabet.
@@ -1536,15 +1536,29 @@ public class Automaton {
             }
 
             gv.addln("node [shape = point ]; qi");
-            gv.addln("qi ->" + q0+";");
+            gv.addln("qi -> " + q0+";");
 
-            for(int q = 0 ; q < Q;q++){
-                for(int x:d.get(q).keySet())
-                    for(int dest:d.get(q).get(x))
-                        gv.addln(q + " -> " + dest+ "[ label = \""+ UtilityMethods.toTuple(decode(x)) + "\"];");
+            TreeMap<Integer, TreeMap<Integer, List<String>>> transitions =
+                new TreeMap<Integer, TreeMap<Integer, List<String>>>();
+            for(int q = 0; q < Q; q++) {
+                transitions.put(q, new TreeMap<>());
+                for(int x : d.get(q).keySet()) {
+                    for(int dest : d.get(q).get(x)) {
+                        transitions.get(q).putIfAbsent(dest, new ArrayList<String>());
+                        transitions.get(q).get(dest).add(
+                            UtilityMethods.toTransitionLabel(decode(x)));
+                    }
+                }
             }
-            gv.addln(gv.end_graph());
 
+            for(int q = 0; q < Q; q++) {
+                for(int dest : transitions.get(q).keySet()) {
+                    String transition_label = String.join(", ", transitions.get(q).get(dest));
+                    gv.addln(q + " -> " + dest + "[ label = \"" + transition_label + "\"];");
+                }
+            }
+
+            gv.addln(gv.end_graph());
         }
         try {
             PrintWriter out = new PrintWriter(address, "UTF-8");

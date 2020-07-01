@@ -129,6 +129,26 @@ public class UtilityMethods {
 
 		return s + ")";
 	}
+
+	public static <T> String toTransitionLabel(List<T> l) {
+		String s = "";
+		if (l.size() == 1) {
+			s += l.get(0);
+			return s;
+		}
+
+		s += "[";
+		for(int i = 0; i < l.size(); i++){
+			if (i == 0) {
+				s += l.get(i);
+			} else {
+				s += "," + l.get(i);
+			}
+		}
+
+		return s + "]";
+	}
+
 	/**
 	 * For example when L = [1,3,2,1,3] the result is [1,3,2]
 	 * @param L
