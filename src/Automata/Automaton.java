@@ -38,6 +38,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.TreeMap;
 
 import dk.brics.automaton.RegExp;
@@ -1581,6 +1582,7 @@ public class Automaton {
         }
         canonize();
         StringBuffer s = new StringBuffer();
+        s.append("with(ArrayTools):" + UtilityMethods.newLine());
         write_initial_state_vector(s);
         s.append(UtilityMethods.newLine() + "# In what follows, the M_i_x, for a free variable i and a value x, denotes" + UtilityMethods.newLine());
         s.append("# an incidence matrix of the underlying graph of (the automaton of)" + UtilityMethods.newLine());
@@ -1591,12 +1593,19 @@ public class Automaton {
             if(!label.contains(variable)){
                 throw new Exception("incidence matrices for the variable " + variable + " cannot be calculated, because " + variable +" is not a free variable.");
             }
-            int index = label.indexOf(variable);
-            for(int value:A.get(index)){
-                write_matrix_for_a_variable_value_pair(variable,value,index,s);
-            }
+        }
+        List<Integer> indices = free_variables.stream().map(variable -> label.indexOf(variable)).collect(Collectors.toList());
+        List<List<Integer>> indexValueLists = indices.stream().map(index -> A.get(index)).collect(Collectors.toList());
+        List<List<Integer>> valueLists = cartesianProduct(indexValueLists);
+        for (List<Integer> valueList: valueLists) {
+            write_matrix_for_a_variable_list_value_pair(free_variables,valueList,indices,s);
         }
         write_final_states_vector(s);
+        s.append(UtilityMethods.newLine() + "for i from 1 to Size(v)[2] do v := v.M_");
+        s.append(String.join("_", free_variables)+"_");
+        s.append(String.join("_", Collections.nCopies(free_variables.size(), "0")));
+        s.append("; od; #fix up v by multiplying");
+
         String res = s.toString();
 
         try {
@@ -1611,11 +1620,15 @@ public class Automaton {
         return res;
     }
 
-    private void write_matrix_for_a_variable_value_pair(String variable, int value, int index, StringBuffer s){
-        s.append(UtilityMethods.newLine() + "M_"+variable+"_"+value+" := Matrix([");
+    private void write_matrix_for_a_variable_list_value_pair(List<String> variables, List<Integer> valueList, List<Integer> indices, StringBuffer s) {
+        s.append(UtilityMethods.newLine() + "M_"+String.join("_", variables)+"_");
+        s.append(valueList.stream().map(String::valueOf).collect(Collectors.joining("_")));
+        s.append(" := Matrix([");
         Set<Integer> encoded_values = new HashSet<Integer>();
         for(int x = 0; x != alphabetSize;++x){
-            if(decode(x).get(index) == value){
+            List<Integer> decoding = decode(x);
+            List<Integer> compareList = indices.stream().map(index -> decoding.get(index)).collect(Collectors.toList());
+            if(compareList.equals(valueList)){
                 encoded_values.add(x);
             }
         }
@@ -1647,9 +1660,9 @@ public class Automaton {
     }
 
     private void write_initial_state_vector(StringBuffer s){
-        s.append("# The row vector u denotes the indicator vector of the (singleton)" + UtilityMethods.newLine());
+        s.append("# The row vector v denotes the indicator vector of the (singleton)" + UtilityMethods.newLine());
         s.append("# set of initial states." + UtilityMethods.newLine());
-        s.append("u := Vector[row]([");
+        s.append("v := Vector[row]([");
         for(int q = 0 ; q != Q; ++q){
             if(q == q0){
                 s.append("1");
@@ -1665,9 +1678,9 @@ public class Automaton {
     }
 
     private void write_final_states_vector(StringBuffer s){
-        s.append(UtilityMethods.newLine()+"# The column vector v denotes the indicator vector of the" + UtilityMethods.newLine());
+        s.append(UtilityMethods.newLine()+"# The column vector w denotes the indicator vector of the" + UtilityMethods.newLine());
         s.append("# set of final states." + UtilityMethods.newLine());
-        s.append("v := Vector[column]([");
+        s.append("w := Vector[column]([");
         for(int q = 0; q != Q; ++q){
             if(O.get(q) != 0){
                 s.append("1");
@@ -1680,6 +1693,26 @@ public class Automaton {
             }
         }
         s.append("]);" + UtilityMethods.newLine());
+    }
+
+    private <T> List<List<T>> cartesianProduct(List<List<T>> lists) {
+        List<List<T>> resultLists = new ArrayList<List<T>>();
+        if (lists.size() == 0) {
+            resultLists.add(new ArrayList<T>());
+            return resultLists;
+        } else {
+            List<T> firstList = lists.get(0);
+            List<List<T>> remainingLists = cartesianProduct(lists.subList(1, lists.size()));
+            for (T condition : firstList) {
+                for (List<T> remainingList : remainingLists) {
+                    ArrayList<T> resultList = new ArrayList<T>();
+                    resultList.add(condition);
+                    resultList.addAll(remainingList);
+                    resultLists.add(resultList);
+                }
+            }
+        }
+        return resultLists;
     }
 
     /**

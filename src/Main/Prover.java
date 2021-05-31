@@ -187,11 +187,7 @@ public class Prover {
 		    			}
 		    		} catch(Exception e) {
 		    			System.out.flush();
-		    			System.err.println(
-		    				UtilityMethods.COLOR_FAILED +
-		    				e.getMessage() +
-		    				UtilityMethods.COLOR_RESET +
-		    				UtilityMethods.newLine() + "\t: " + s);
+		    			System.err.println(e.getMessage() + UtilityMethods.newLine() + "\t: " + s);
 		    			System.err.flush();
 		    		}
 

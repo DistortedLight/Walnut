@@ -1,1 +1,0 @@
-the input alphabet of an automaton generated from a regular expression must be a subset of {0,1,...,9}

@@ -202,8 +202,7 @@ public class OstrowskiNumeration {
             throw new Exception("Error: number system " + this.name + " already exisis.");
         }
         repr.write(repr_file_name);
-        UtilityMethods.printSln(
-            "Ostrowski representation automaton created and written to file " + repr_file_name);
+        System.out.println("Ostrowski representation automaton created and written to file " + repr_file_name);
     }
 
     public void createAdderAutomaton() throws Exception {
@@ -270,8 +269,7 @@ public class OstrowskiNumeration {
         }
 
         adder.write(adder_file_name);
-        UtilityMethods.printSln(
-            "Ostrowski adder automaton created and written to file " + adder_file_name);
+        System.out.println("Ostrowski adder automaton created and written to file " + adder_file_name);
     }
 
     public String toString() {
