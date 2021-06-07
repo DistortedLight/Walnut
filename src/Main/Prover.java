@@ -38,7 +38,7 @@ import Automata.OstrowskiNumeration;
  * @author Hamoon
  */
 public class Prover {
-	static String REGEXP_FOR_THE_LIST_OF_COMMANDS = "(eval|def|macro|reg|load|ost|exit|quit|cls|clear)";
+	static String REGEXP_FOR_THE_LIST_OF_COMMANDS = "(eval|def|macro|reg|load|ost|exit|quit|cls|clear|combine)";
 	static String REGEXP_FOR_EMPTY_COMMAND = "^\\s*(;|::|:)\\s*$";
 	/**
 	 * the high-level scheme of a command is a name followed by some arguments and ending in either ; : or ::
@@ -86,6 +86,12 @@ public class Prover {
 	static int GROUP_OST_PREPERIOD = 2;
 	static int GROUP_OST_PERIOD = 4;
 	static int GROUP_OST_END = 6;
+
+	static String REGEXP_FOR_combine_COMMAND = "^\\s*combine\\s+([a-zA-Z]\\w*)((\\s+([a-zA-Z]\\w*))*)\\s*(;|::|:)\\s*$";
+	static Pattern PATTERN_FOR_combine_COMMAND = Pattern.compile(REGEXP_FOR_combine_COMMAND);
+	static int GROUP_COMBINE_NAME = 1, GROUP_COMBINE_AUTOMATA = 2, GROUP_COMBINE_END = 5;
+	static String REGEXP_FOR_AN_AUTOMATON_IN_combine_COMMAND = "[a-zA-Z]\\w*";
+	static Pattern PATTERN_FOR_AN_AUTOMATON_IN_combine_COMMAND = Pattern.compile(REGEXP_FOR_AN_AUTOMATON_IN_combine_COMMAND);
 
 	/**
 	 * if the command line argument is not empty, we treat args[0] as a filename.
@@ -239,6 +245,8 @@ public class Prover {
 			ostCommand(s);
 		} else if (commandName.equals("cls") || commandName.equals("clear")) {
 			clearScreen();
+		} else if (commandName.equals("combine")) {
+			combineCommand(s);
 		} else {
 			throw new Exception("Invalid command " + commandName + ".");
 		}
@@ -269,6 +277,8 @@ public class Prover {
 			return macroCommand(s);
 		} else if(commandName.equals("reg")) {
 			return regCommand(s);
+		} else if(commandName.equals("combine")) {
+			return combineCommand(s);
 		} else {
 			throw new Exception("Invalid command: " + commandName);
 		}
@@ -402,6 +412,42 @@ public class Prover {
 		R.write(UtilityMethods.get_address_for_automata_library()+m.group(R_NAME)+".txt");
 
 		return new TestCase(s,R,"","","");
+	}
+
+	public static TestCase combineCommand(String s) throws Exception {
+		Matcher m = PATTERN_FOR_combine_COMMAND.matcher(s);
+		if(!m.find()) {
+			throw new Exception("Invalid use of combine command.");
+		}
+
+		boolean printSteps = m.group(GROUP_COMBINE_END).equals(":");
+		boolean printDetails = m.group(GROUP_COMBINE_END).equals("::");
+
+		String prefix = new String();
+		StringBuffer log = new StringBuffer();
+
+
+		List<String> automataNames = new ArrayList<String>();
+
+		Matcher m1 = PATTERN_FOR_AN_AUTOMATON_IN_combine_COMMAND.matcher(m.group(GROUP_COMBINE_AUTOMATA));
+		while(m1.find()) {
+			String t = m1.group();
+			automataNames.add(t);
+		}
+
+		if (automataNames.size() == 0) {
+			throw new Exception("Combine requires at least one automaton as input.");
+		}
+		Automaton first = new Automaton(UtilityMethods.get_address_for_automata_library()+automataNames.get(0)+".txt");
+		automataNames.remove(0);
+
+		Automaton C = first.combine(automataNames, printSteps, prefix, log);
+		// currently drawing DFAOs is not supported, so outputs are not shown in the drawing
+		C.draw(UtilityMethods.get_address_for_result()+m.group(GROUP_COMBINE_NAME)+".gv", s);
+		C.write(UtilityMethods.get_address_for_result()+m.group(GROUP_COMBINE_NAME)+".txt");
+		C.write(UtilityMethods.get_address_for_words_library()+m.group(GROUP_COMBINE_NAME)+".txt");
+
+		return new TestCase(s,C,"","","");
 	}
 
 	public static void ostCommand(String s) throws Exception {
