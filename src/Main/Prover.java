@@ -24,6 +24,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -68,15 +69,21 @@ public class Prover {
 	static int M_NAME = 1,M_DEFINITION = 2;
 	static Pattern PATTERN_FOR_macro_COMMAND = Pattern.compile(REGEXP_FOR_macro_COMMAND);
 
-	static String REGEXP_FOR_reg_COMMAND = "^\\s*(reg)\\s+([a-zA-Z]\\w*)\\s+((((msd|lsd)_(\\d+|\\w+))|((msd|lsd)(\\d+|\\w+))|(msd|lsd)|(\\d+|\\w+))|(\\{(\\s*(\\+|\\-)?\\s*\\d+)(\\s*,\\s*(\\+|\\-)?\\s*\\d+)*\\s*\\}))\\s+\"(.*)\"\\s*(;|::|:)\\s*$";
+	static String REGEXP_FOR_reg_COMMAND = "^\\s*(reg)\\s+([a-zA-Z]\\w*)\\s+((((((msd|lsd)_(\\d+|\\w+))|((msd|lsd)(\\d+|\\w+))|(msd|lsd)|(\\d+|\\w+))|(\\{(\\s*(\\+|\\-)?\\s*\\d+)(\\s*,\\s*(\\+|\\-)?\\s*\\d+)*\\s*\\}))\\s+)+)\"(.*)\"\\s*(;|::|:)\\s*$";
 
 	/**
 	 * important groups in REGEXP_FOR_reg_COMMAND
 	 */
-	static int R_NAME = 2,R_ALPHABET = 3,R_NUMBER_SYSTEM = 4,R_SET = 13, R_REGEXP = 18;
+	static int R_NAME = 2, R_LIST_OF_ALPHABETS = 3, R_REGEXP = 20;
 	static Pattern PATTERN_FOR_reg_COMMAND = Pattern.compile(REGEXP_FOR_reg_COMMAND);
-	static String REXEXP_FOR_A_SINGLE_ELEMENT_OF_A_SET = "(\\+|\\-)?\\s*\\d+";
-	static Pattern PATTERN_FOR_A_SINGLE_ELEMENT_OF_A_SET = Pattern.compile(REXEXP_FOR_A_SINGLE_ELEMENT_OF_A_SET);
+	static String REGEXP_FOR_A_SINGLE_ELEMENT_OF_A_SET = "(\\+|\\-)?\\s*\\d+";
+	static Pattern PATTERN_FOR_A_SINGLE_ELEMENT_OF_A_SET = Pattern.compile(REGEXP_FOR_A_SINGLE_ELEMENT_OF_A_SET);
+	static String REGEXP_FOR_AN_ALPHABET = "((((msd|lsd)_(\\d+|\\w+))|((msd|lsd)(\\d+|\\w+))|(msd|lsd)|(\\d+|\\w+))|(\\{(\\s*(\\+|\\-)?\\s*\\d+)(\\s*,\\s*(\\+|\\-)?\\s*\\d+)*\\s*\\}))\\s+";
+	static Pattern PATTERN_FOR_AN_ALPHABET = Pattern.compile(REGEXP_FOR_AN_ALPHABET);
+	static int R_NUMBER_SYSTEM = 2,R_SET = 11;
+
+	static String REGEXP_FOR_AN_ALPHABET_VECTOR = "\\[(\\s*(\\+|\\-)?\\s*\\d+)(\\s*,\\s*(\\+|\\-)?\\s*\\d+)*\\s*\\]";
+	static Pattern PATTERN_FOR_AN_ALPHABET_VECTOR = Pattern.compile(REGEXP_FOR_AN_ALPHABET_VECTOR);
 
 	static Pattern PATTERN_FOR_A_SINGLE_NOT_SPACED_WORD = Pattern.compile("\\w+");
 
@@ -98,7 +105,7 @@ public class Prover {
 	 */
 	public static void main(String[] args) throws Exception {
 		UtilityMethods.setPaths();
-		// IntegrationTest IT = new IntegrationTest(true);
+		//IntegrationTest IT = new IntegrationTest(true);
 		//IT.runTestCases(384);
 		//IT.runPerformanceTest("Walnut with Valmari without refactoring", 5);
 		//IT.runPerformanceTest("Walnut with dk.bricks", 5);
@@ -376,27 +383,97 @@ public class Prover {
 		Matcher m = PATTERN_FOR_reg_COMMAND.matcher(s);
 		if(!m.find())throw new Exception("invalid use of reg command");
 		NumberSystem ns = null;
+		List<List<Integer>> alphabets = new ArrayList<List<Integer>>();
+		List<NumberSystem> numSys = new ArrayList<NumberSystem>();
 		List<Integer> alphabet = null;
-		if((m.group(R_NUMBER_SYSTEM)!=null)){
+		if(m.group(R_LIST_OF_ALPHABETS) == null) {
 			String base = "msd_2";
-			if(m.group(5) != null)base = m.group(5);
-			if(m.group(8) != null)base = "msd_"+m.group(8);
-			if(m.group(11) != null)base =  m.group(11)+"_2";
-			if(m.group(12) != null)base = "msd_"+m.group(12);
 			try{
 				if(!Predicate.number_system_Hash.containsKey(base))
 					Predicate.number_system_Hash.put(base, new NumberSystem(base));
 				ns = Predicate.number_system_Hash.get(base);
+				numSys.add(Predicate.number_system_Hash.get(base));
 			}catch(Exception e){
 				throw new Exception("number system " + base + " does not exist: char at " + m.start(R_NUMBER_SYSTEM)+UtilityMethods.newLine()+"\t:"+e.getMessage());
 			}
-			alphabet = ns.getAlphabet();
+			alphabets.add(ns.getAlphabet());
+		}
+		Matcher m1 = PATTERN_FOR_AN_ALPHABET.matcher(m.group(R_LIST_OF_ALPHABETS));
+		while (m1.find()) {
+			if((m1.group(R_NUMBER_SYSTEM)!=null)){
+				String base = "msd_2";
+				if(m1.group(3) != null)base = m1.group(3);
+				if(m1.group(6) != null)base = m1.group(7)+"_"+m1.group(8);
+				if(m1.group(9) != null)base =  m1.group(9)+"_2";
+				if(m1.group(10) != null)base = "msd_"+m1.group(10);
+				try{
+					if(!Predicate.number_system_Hash.containsKey(base))
+						Predicate.number_system_Hash.put(base, new NumberSystem(base));
+					ns = Predicate.number_system_Hash.get(base);
+					numSys.add(Predicate.number_system_Hash.get(base));
+				}catch(Exception e){
+					throw new Exception("number system " + base + " does not exist: char at " + m.start(R_NUMBER_SYSTEM)+UtilityMethods.newLine()+"\t:"+e.getMessage());
+				}
+				alphabets.add(ns.getAlphabet());
+			}
+
+			else if(m1.group(R_SET) != null){
+				alphabet = what_is_the_alphabet(m1.group(R_SET));
+				alphabets.add(alphabet);
+				numSys.add(null);
+			}
+		}
+		// To support regular expressions with multiple arity (eg. "[1,0][0,1][0,0]*"), we must translate each of these vectors to an
+		// encoding, which will then be turned into a unicode character that dk.brics can work with when constructing an automaton
+		// from a regular expression. Since the encoding method is within the Automaton class, we create a dummy instance and load it
+		// with our sequence of number systems in order to access it. After the regex automaton is created, we set its alphabet to be the
+		// one requested, instead of the unicode alphabet that dk.brics uses.
+		Automaton M = new Automaton();
+		M.A = alphabets;
+		String baseexp = m.group(R_REGEXP);
+		Matcher m2 = PATTERN_FOR_AN_ALPHABET_VECTOR.matcher(baseexp);
+		// if we haven't had to replace any input vectors with unicode, we use the legacy method of constructing the automaton
+		Boolean replaced = false;
+		while (m2.find()) {
+			List<Integer> L = new ArrayList<Integer>();
+			String alphabetVector = m2.group();
+			// needed to replace this string with the unicode mapping
+			String alphabetVectorCopy = alphabetVector;
+			alphabetVector.substring(1, alphabetVector.length()-1); // truncate brackets [ ]
+			Matcher m3 = PATTERN_FOR_A_SINGLE_ELEMENT_OF_A_SET.matcher(alphabetVector);
+			while (m3.find()) {
+				L.add(UtilityMethods.parseInt(m3.group()));
+			}
+			if (L.size() != M.A.size()) {
+				throw new Exception("Mismatch between vector length in regex and specified number of inputs to automaton");
+			}
+			int vectorEncoding = M.encode(L);
+			// dk.brics regex has several reserved characters - we cannot use these or the method that generates the automaton will
+			// not be able to parse the string properly. All of these reserved characters have UTF-16 values between 0 and 127, so offsetting
+			// our encoding by 128 will be enough to ensure that we have no conflicts
+			vectorEncoding += 128;
+			char replacement = (char)vectorEncoding;
+			String replacementStr = Character.toString(replacement);
+			baseexp = baseexp.replace(alphabetVectorCopy, replacementStr);
+			replaced = true;
+		}
+		M.alphabetSize = 1;
+		for (List<Integer> alphlist : M.A) {
+			M.alphabetSize *= alphlist.size();
 		}
 
-		else if(m.group(R_SET) != null){
-			alphabet = what_is_the_alphabet(m.group(R_SET));
+		Automaton R;
+
+		if (replaced) {
+			R = new Automaton(baseexp,M.A,M.alphabetSize);
+			R.A = M.A;
+			R.alphabetSize = M.alphabetSize;
+			R.NS = numSys;
 		}
-		Automaton R = new Automaton(m.group(R_REGEXP),alphabet,ns);
+		else {
+			// in this case, there will only be one alphabet vector
+			R = new Automaton(baseexp,alphabets.get(0),ns);
+		}
 		R.draw(UtilityMethods.get_address_for_result()+m.group(R_NAME)+".gv",m.group(R_REGEXP));
 		R.write(UtilityMethods.get_address_for_result()+m.group(R_NAME)+".txt");
 		R.write(UtilityMethods.get_address_for_automata_library()+m.group(R_NAME)+".txt");

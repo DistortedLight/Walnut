@@ -416,7 +416,7 @@ public class Automaton {
         NS.add(null);
         UtilityMethods.removeDuplicates(alphabet);
         /**
-         * For example if alphabet = {2,4,1} then intesrsectingRegExp = [241]*
+         * For example if alphabet = {2,4,1} then intersectingRegExp = [241]*
          */
         String intersectingRegExp = "[";
         for(int x:alphabet){
@@ -465,6 +465,36 @@ public class Automaton {
         NumberSystem numSys) throws Exception {
         this(regularExpression,alphabet);
         NS.set(0,numSys);
+    }
+
+    // This handles the generalised case of vectors such as "[0,1]*[0,0][0,1]"
+    public Automaton(String regularExpression, List<List<Integer>> alphabet, Integer alphabetSize) throws Exception {
+
+        this();
+        if(alphabetSize > ((1<<Character.SIZE) -1)){
+            throw new Exception("size of input alphabet exceeds the limit of " + ((1<<Character.SIZE) -1));
+        }
+        String intersectingRegExp = "[";
+        for(int x=0; x<alphabetSize; x++){
+            char nextChar = (char)(128 + x);
+            intersectingRegExp += nextChar;
+        }
+        intersectingRegExp += "]*";
+        regularExpression = "("+regularExpression+")&"+intersectingRegExp;
+        dk.brics.automaton.RegExp RE = new RegExp(regularExpression);
+        dk.brics.automaton.Automaton M = RE.toAutomaton();
+        M.minimize();
+        this.setThisAutomatonToRepresent(M);
+        // We added 128 to the encoding of every input vector before to avoid reserved characters, now we subtract it again
+        // to get back the standard encoding
+        List<TreeMap<Integer,List<Integer>>> new_d = new ArrayList<>();
+        for(int q = 0; q < Q;q++)new_d.add(new TreeMap<Integer,List<Integer>>());
+        for(int q = 0 ; q < Q;q++){
+            for(int x:d.get(q).keySet()){
+                new_d.get(q).put(x-128, d.get(q).get(x));
+            }
+        }
+        d = new_d;
     }
 
     /**
@@ -2023,7 +2053,7 @@ public class Automaton {
      * @param l
      * @return
      */
-    private int encode(List<Integer> l){
+    public int encode(List<Integer> l){
         if(encoder == null){
             encoder = new ArrayList<Integer>();
             encoder.add(1);
@@ -2038,7 +2068,7 @@ public class Automaton {
         return encoding;
     }
 
-    private int encode(List<Integer> l,List<List<Integer>> A,List<Integer> encoder){
+    public int encode(List<Integer> l,List<List<Integer>> A,List<Integer> encoder){
         int encoding = 0;
         for(int i = 0 ; i < l.size();i++){
             encoding += encoder.get(i) * A.get(i).indexOf(l.get(i));
