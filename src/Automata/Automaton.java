@@ -203,6 +203,9 @@ public class Automaton {
     /* Adjacent transitions */
     int[] _A, _F;
 
+    // for use in the combine command, counts how many products we have taken so far, and hence what to set outputs to
+    public int combineIndex;
+
     void make_adjacent(Integer K[]) {
         int q, t;
         for( q = 0; q <= num_states; ++q ) {
@@ -412,6 +415,7 @@ public class Automaton {
     public Automaton(String regularExpression, List <Integer> alphabet) throws Exception {
         this();
         if(alphabet == null || alphabet.size()== 0)throw new Exception("empty alphabet is not accepted");
+        long timeBefore = System.currentTimeMillis();
         alphabet = new ArrayList<Integer>(alphabet);
         NS.add(null);
         UtilityMethods.removeDuplicates(alphabet);
@@ -457,6 +461,9 @@ public class Automaton {
                 }
             }
         }
+        long timeAfter = System.currentTimeMillis();
+            String msg = "computed ~:" + Q + " states - "+(timeAfter-timeBefore)+"ms";
+            System.out.println(msg);
     }
 
     public Automaton(
@@ -1003,6 +1010,8 @@ public class Automaton {
             case ">=":
                 N.O.add((O.get(p) >= M.O.get(q)) ? 1 : 0);
                 break;
+            case "combine":
+                N.O.add((M.O.get(q) == 1) ? (combineIndex + 1) : O.get(p));
             }
 
             for(int x:d.get(p).keySet()){
@@ -1291,6 +1300,36 @@ public class Automaton {
         dk.brics.automaton.Automaton Y = M.to_dk_bricks_automaton();
         dk.brics.automaton.Automaton X = to_dk_bricks_automaton();
         return X.equals(Y);
+    }
+
+    public Automaton combine(List<String> automataNames, boolean print, String prefix, StringBuffer log) throws Exception {
+        Queue<Automaton> subautomata =  new LinkedList<Automaton>();
+		for (String name : automataNames) {
+			Automaton M = new Automaton(UtilityMethods.get_address_for_automata_library()+name+".txt");
+			subautomata.add(M);
+		}
+		Automaton first = this.clone();
+	
+		// In an automaton without output, every non-zero output value represents an accepting state
+		for (int q = 0; q < first.Q; q++) {
+			if (first.O.get(q) != 0) {
+				first.O.set(q, 1);
+			}
+		}
+		first.combineIndex = 1;
+		while (subautomata.size() > 0) {
+			Automaton next = subautomata.remove();
+			// potentially add logging later
+            
+            // crossProduct requires labelling so we make an arbitrary labelling and use it for both: this is valid since
+            // input alphabets and arities are assumed to be identical for the combine method
+            first.randomLabel();
+            next.label = first.label;
+			Automaton product = first.crossProduct(next, "combine", print, prefix, log);
+			product.combineIndex = first.combineIndex + 1;
+			first = product;
+		}
+        return first;
     }
 
     public void applyAllRepresentations() throws Exception{
