@@ -31,6 +31,7 @@ public class UtilityMethods {
 	static String ADDRESS_FOR_MACRO_LIBRARY = "Macro Library/";
 	static String ADDRESS_FOR_AUTOMATA_LIBRARY = "Automata Library/";
 	static String ADDRESS_FOR_WORDS_LIBRARY = "Word Automata Library/";
+	static String ADDRESS_FOR_MORPHISM_LIBRARY = "Morphism Library/";
 	static String ADDRESS_FOR_RESULT = "Result/";
 	static String ADDRESS_FOR_CUSTOM_BASES = "Custom Bases/";
 	static String ADDRESS_FOR_TEST_LIBRARY = "Test Library/";
@@ -66,6 +67,10 @@ public class UtilityMethods {
 
 	public static String get_address_for_words_library() {
 		return dir + ADDRESS_FOR_WORDS_LIBRARY;
+	}
+
+	public static String get_address_for_morphism_library() {
+		return dir + ADDRESS_FOR_MORPHISM_LIBRARY;
 	}
 
 	public static String get_address_for_test_library() {

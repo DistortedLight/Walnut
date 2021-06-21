@@ -21,6 +21,7 @@ package Automata;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -51,6 +52,11 @@ public class ParseMethods {
 
 	static String REGEXP_FOR_TRANSITION = "^\\s*((((\\+|\\-)?\\s*\\d+\\s*)|(\\s*\\*\\s*))+)\\s*\\->\\s*((\\d+\\s*)+)\\s*$";
 	static Pattern PATTERN_FOR_TRANSITION = Pattern.compile(REGEXP_FOR_TRANSITION);
+
+	static String REGEXP_FOR_MAPPING_IN_morphism_COMMAND = "(\\d+)\\s*\\-\\>\\s*((\\[(\\+|\\-)?\\s*\\d+\\]|\\d)*)";
+	static Pattern PATTERN_FOR_MAPPING_IN_morphism_COMMAND = Pattern.compile(REGEXP_FOR_MAPPING_IN_morphism_COMMAND);
+	static String REGEXP_FOR_MAPPING_IMAGE_IN_morphism_COMMAND = "\\[(\\+|\\-)?\\s*\\d+\\]|\\d";
+	static Pattern PATTERN_FOR_MAPPING_IMAGE_IN_morphism_COMMAND = Pattern.compile(REGEXP_FOR_MAPPING_IMAGE_IN_morphism_COMMAND);
 
 	public static boolean parseTrueFalse(String s,boolean[] singleton){
 		Matcher m = PATTERN_FOR_TRUE_FALSE.matcher(s);
@@ -150,5 +156,33 @@ public class ParseMethods {
 			else list.add(UtilityMethods.parseInt(m.group(1)));
 			index = m.end();
 		}
+	}
+
+	public static TreeMap<Integer, List<Integer>> parseMorphism(String mapString) throws Exception {
+		TreeMap<Integer, List<Integer>> mapping = new TreeMap<Integer, List<Integer>>();
+		
+		Matcher m1 = ParseMethods.PATTERN_FOR_MAPPING_IN_morphism_COMMAND.matcher(mapString);
+		while(m1.find()) {
+			String input = m1.group(1);
+			String imageString = m1.group(2);
+			List<Integer> image = new ArrayList<Integer>();
+
+			Matcher m2 = PATTERN_FOR_MAPPING_IMAGE_IN_morphism_COMMAND.matcher(imageString);
+			while(m2.find()) {
+				String imagePiece = m2.group();
+				if (imagePiece.charAt(0) == '[') {
+					imagePiece = imagePiece.substring(1, imagePiece.length()-1);
+					image.add(Integer.parseInt(imagePiece));
+				}
+				else {
+					image.add(Integer.parseInt(imagePiece));
+				}
+			}
+			mapping.put(Integer.parseInt(input), image);
+		}
+		if (mapping.size() == 0) {
+			throw new Exception("Morphism has no valid mappings.");
+		}
+		return mapping;
 	}
 }
