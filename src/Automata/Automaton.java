@@ -462,8 +462,8 @@ public class Automaton {
             }
         }
         long timeAfter = System.currentTimeMillis();
-            String msg = "computed ~:" + Q + " states - "+(timeAfter-timeBefore)+"ms";
-            System.out.println(msg);
+        String msg = "computed ~:" + Q + " states - "+(timeAfter-timeBefore)+"ms";
+        System.out.println(msg);
     }
 
     public Automaton(
@@ -481,6 +481,7 @@ public class Automaton {
         if(alphabetSize > ((1<<Character.SIZE) -1)){
             throw new Exception("size of input alphabet exceeds the limit of " + ((1<<Character.SIZE) -1));
         }
+        long timeBefore = System.currentTimeMillis();
         String intersectingRegExp = "[";
         for(int x=0; x<alphabetSize; x++){
             char nextChar = (char)(128 + x);
@@ -502,6 +503,9 @@ public class Automaton {
             }
         }
         d = new_d;
+        long timeAfter = System.currentTimeMillis();
+        String msg = "computed ~:" + Q + " states - "+(timeAfter-timeBefore)+"ms";
+        System.out.println(msg);
     }
 
     /**

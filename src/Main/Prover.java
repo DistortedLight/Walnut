@@ -29,7 +29,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.TreeMap;
 import Automata.Automaton;
+import Automata.Morphism;
 import Automata.NumberSystem;
 import Automata.OstrowskiNumeration;
 
@@ -39,7 +41,7 @@ import Automata.OstrowskiNumeration;
  * @author Hamoon
  */
 public class Prover {
-	static String REGEXP_FOR_THE_LIST_OF_COMMANDS = "(eval|def|macro|reg|load|ost|exit|quit|cls|clear|combine)";
+	static String REGEXP_FOR_THE_LIST_OF_COMMANDS = "(eval|def|macro|reg|load|ost|exit|quit|cls|clear|combine|morphism|promote)";
 	static String REGEXP_FOR_EMPTY_COMMAND = "^\\s*(;|::|:)\\s*$";
 	/**
 	 * the high-level scheme of a command is a name followed by some arguments and ending in either ; : or ::
@@ -99,6 +101,14 @@ public class Prover {
 	static int GROUP_COMBINE_NAME = 1, GROUP_COMBINE_AUTOMATA = 2, GROUP_COMBINE_END = 5;
 	static String REGEXP_FOR_AN_AUTOMATON_IN_combine_COMMAND = "[a-zA-Z]\\w*";
 	static Pattern PATTERN_FOR_AN_AUTOMATON_IN_combine_COMMAND = Pattern.compile(REGEXP_FOR_AN_AUTOMATON_IN_combine_COMMAND);
+
+	static String REGEXP_FOR_morphism_COMMAND = "^\\s*morphism\\s+([a-zA-Z]\\w*)\\s+\"(\\d+\\s*\\-\\>\\s*(.)*(,\\d+\\s*\\-\\>\\s*(.)*)*)\"\\s*(;|::|:)\\s*$";
+	static Pattern PATTERN_FOR_morphism_COMMAND	= Pattern.compile(REGEXP_FOR_morphism_COMMAND);
+	static int GROUP_MORPHISM_NAME = 1, GROUP_MORPHISM_DEFINITION;
+
+	static String REGEXP_FOR_promote_COMMAND = "^\\s*promote\\s+([a-zA-Z]\\w*)\\s+([a-zA-Z]\\w*)\\s*(;|::|:)\\s*$";
+	static Pattern PATTERN_FOR_promote_COMMAND = Pattern.compile(REGEXP_FOR_promote_COMMAND);
+	static int GROUP_PROMOTE_NAME = 1, GROUP_PROMOTE_MORPHISM = 2;
 
 	/**
 	 * if the command line argument is not empty, we treat args[0] as a filename.
@@ -254,6 +264,10 @@ public class Prover {
 			clearScreen();
 		} else if (commandName.equals("combine")) {
 			combineCommand(s);
+		} else if (commandName.equals("morphism")) {
+			morphismCommand(s);
+		} else if (commandName.equals("promote")) {
+			promoteCommand(s);
 		} else {
 			throw new Exception("Invalid command " + commandName + ".");
 		}
@@ -525,6 +539,32 @@ public class Prover {
 		C.write(UtilityMethods.get_address_for_words_library()+m.group(GROUP_COMBINE_NAME)+".txt");
 
 		return new TestCase(s,C,"","","");
+	}
+
+	public static void morphismCommand(String s) throws Exception {
+		Matcher m = PATTERN_FOR_morphism_COMMAND.matcher(s);
+		if(!m.find()) {
+			throw new Exception("Invalid use of morphism command.");
+		}
+		String name = m.group(GROUP_MORPHISM_NAME);
+
+		Morphism M = new Morphism(name, m.group(GROUP_MORPHISM_DEFINITION));
+		M.write(UtilityMethods.get_address_for_result()+name+".txt");
+		M.write(UtilityMethods.get_address_for_morphism_library()+name+".txt");
+	}
+
+	public static TestCase promoteCommand(String s) throws Exception {
+		Matcher m = PATTERN_FOR_promote_COMMAND.matcher(s);
+		if(!m.find()) {
+			throw new Exception("Invalid use of promote command.");
+		}
+		Morphism h = new Morphism(UtilityMethods.get_address_for_morphism_library()+m.group(GROUP_PROMOTE_MORPHISM)+".txt");
+		Automaton P = h.toWordAutomaton();
+		P.draw(UtilityMethods.get_address_for_result()+m.group(GROUP_PROMOTE_NAME)+".gv", s);
+		P.write(UtilityMethods.get_address_for_result()+m.group(GROUP_PROMOTE_NAME)+".txt");
+		P.write(UtilityMethods.get_address_for_words_library()+m.group(GROUP_PROMOTE_NAME)+".txt");
+
+		return new TestCase(s,P,"","","");
 	}
 
 	public static void ostCommand(String s) throws Exception {
