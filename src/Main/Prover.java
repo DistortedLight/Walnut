@@ -84,7 +84,7 @@ public class Prover {
 	static Pattern PATTERN_FOR_AN_ALPHABET = Pattern.compile(REGEXP_FOR_AN_ALPHABET);
 	static int R_NUMBER_SYSTEM = 2,R_SET = 11;
 
-	static String REGEXP_FOR_AN_ALPHABET_VECTOR = "\\[(\\s*(\\+|\\-)?\\s*\\d+)(\\s*,\\s*(\\+|\\-)?\\s*\\d+)*\\s*\\]";
+	static String REGEXP_FOR_AN_ALPHABET_VECTOR = "(\\[(\\s*(\\+|\\-)?\\s*\\d+)(\\s*,\\s*(\\+|\\-)?\\s*\\d+)*\\s*\\])|(\\d)";
 	static Pattern PATTERN_FOR_AN_ALPHABET_VECTOR = Pattern.compile(REGEXP_FOR_AN_ALPHABET_VECTOR);
 
 	static Pattern PATTERN_FOR_A_SINGLE_NOT_SPACED_WORD = Pattern.compile("\\w+");
@@ -463,7 +463,9 @@ public class Prover {
 			String alphabetVector = m2.group();
 			// needed to replace this string with the unicode mapping
 			String alphabetVectorCopy = alphabetVector;
-			alphabetVector.substring(1, alphabetVector.length()-1); // truncate brackets [ ]
+			if (alphabetVector.charAt(0) == '[') {
+				alphabetVector.substring(1, alphabetVector.length()-1); // truncate brackets [ ]
+			}
 			Matcher m3 = PATTERN_FOR_A_SINGLE_ELEMENT_OF_A_SET.matcher(alphabetVector);
 			while (m3.find()) {
 				L.add(UtilityMethods.parseInt(m3.group()));
