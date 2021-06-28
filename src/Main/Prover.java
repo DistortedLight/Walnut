@@ -24,12 +24,12 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.TreeMap;
+import java.util.Set;
 import Automata.Automaton;
 import Automata.Morphism;
 import Automata.NumberSystem;
@@ -41,7 +41,7 @@ import Automata.OstrowskiNumeration;
  * @author Hamoon
  */
 public class Prover {
-	static String REGEXP_FOR_THE_LIST_OF_COMMANDS = "(eval|def|macro|reg|load|ost|exit|quit|cls|clear|combine|morphism|promote)";
+	static String REGEXP_FOR_THE_LIST_OF_COMMANDS = "(eval|def|macro|reg|load|ost|exit|quit|cls|clear|combine|morphism|promote|image)";
 	static String REGEXP_FOR_EMPTY_COMMAND = "^\\s*(;|::|:)\\s*$";
 	/**
 	 * the high-level scheme of a command is a name followed by some arguments and ending in either ; : or ::
@@ -109,6 +109,10 @@ public class Prover {
 	static String REGEXP_FOR_promote_COMMAND = "^\\s*promote\\s+([a-zA-Z]\\w*)\\s+([a-zA-Z]\\w*)\\s*(;|::|:)\\s*$";
 	static Pattern PATTERN_FOR_promote_COMMAND = Pattern.compile(REGEXP_FOR_promote_COMMAND);
 	static int GROUP_PROMOTE_NAME = 1, GROUP_PROMOTE_MORPHISM = 2;
+
+	static String REGEXP_FOR_image_COMMAND = "^\\s*image\\s+([a-zA-Z]\\w*)\\s+([a-zA-Z]\\w*)\\s+([a-zA-Z]\\w*)\\s*(;|::|:)\\s*$";
+	static Pattern PATTERN_FOR_image_COMMAND = Pattern.compile(REGEXP_FOR_image_COMMAND);
+	static int GROUP_IMAGE_NEW_NAME = 1, GROUP_IMAGE_MORPHISM = 2, GROUP_IMAGE_OLD_NAME = 3;
 
 	/**
 	 * if the command line argument is not empty, we treat args[0] as a filename.
@@ -268,6 +272,8 @@ public class Prover {
 			morphismCommand(s);
 		} else if (commandName.equals("promote")) {
 			promoteCommand(s);
+		} else if (commandName.equals("image")) {
+			imageCommand(s);
 		} else {
 			throw new Exception("Invalid command " + commandName + ".");
 		}
@@ -300,7 +306,12 @@ public class Prover {
 			return regCommand(s);
 		} else if(commandName.equals("combine")) {
 			return combineCommand(s);
-		} else {
+		} else if(commandName.equals("promote")) {
+			return promoteCommand(s);
+		} else if(commandName.equals("image")) {
+			return imageCommand(s);
+		}
+		else {
 			throw new Exception("Invalid command: " + commandName);
 		}
 		return null;
@@ -567,6 +578,39 @@ public class Prover {
 		P.write(UtilityMethods.get_address_for_words_library()+m.group(GROUP_PROMOTE_NAME)+".txt");
 
 		return new TestCase(s,P,"","","");
+	}
+
+	public static TestCase imageCommand(String s) throws Exception {
+		Matcher m = PATTERN_FOR_image_COMMAND.matcher(s);
+		if(!m.find()) {
+			throw new Exception("Invalid use of promote command.");
+		}
+		Morphism h = new Morphism(UtilityMethods.get_address_for_morphism_library()+m.group(GROUP_IMAGE_MORPHISM)+".txt");
+		if (!h.isUniform()) {
+			throw new Exception("A morphism applied to a word automaton must be uniform.");
+		}
+		Integer domainMax = Collections.max(h.mapping.keySet());
+		String combineString = "combine " + m.group(GROUP_IMAGE_NEW_NAME);
+		// we construct a define command for a DFA for each x that accepts iff x appears at the nth position
+		for (Integer i=0; i<=domainMax; i++) {
+			eval_def_commands(h.makeInterCommand(i, domainMax, m.group(GROUP_IMAGE_OLD_NAME)));
+			combineString += " " + m.group(GROUP_IMAGE_OLD_NAME) + "_" + i.toString();
+		}
+		combineString += ":";
+		// The combined automaton will be the result of applying h to the old one, except all outputs will be offset by 1, since
+		// the combined automaton only outputs zero when none of the input automata accept. We decrease all outputs by 1 and then
+		// redraw and rewrite the requisite files
+		TestCase retrieval = combineCommand(combineString);
+		
+		Automaton I = retrieval.result.clone();
+		for (int i=0; i<I.O.size(); i++) {
+			I.O.set(i, I.O.get(i)-1);
+		}
+		
+		I.draw(UtilityMethods.get_address_for_result()+m.group(GROUP_IMAGE_NEW_NAME)+".gv", s);
+		I.write(UtilityMethods.get_address_for_result()+m.group(GROUP_IMAGE_NEW_NAME)+".txt");
+		I.write(UtilityMethods.get_address_for_words_library()+m.group(GROUP_IMAGE_NEW_NAME)+".txt");
+		return new TestCase(s,I,"","","");
 	}
 
 	public static void ostCommand(String s) throws Exception {
