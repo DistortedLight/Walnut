@@ -1329,6 +1329,9 @@ public class Automaton {
             // input alphabets and arities are assumed to be identical for the combine method
             first.randomLabel();
             next.label = first.label;
+            // crossProduct requires both automata to be totalized, otherwise it has no idea which cartesian states to transition to
+            first.totalize(print,prefix+" ",log);
+            next.totalize(print,prefix+" ",log);
 			Automaton product = first.crossProduct(next, "combine", print, prefix, log);
 			product.combineIndex = first.combineIndex + 1;
 			first = product;
