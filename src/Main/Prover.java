@@ -96,10 +96,10 @@ public class Prover {
 	static int GROUP_OST_PERIOD = 4;
 	static int GROUP_OST_END = 6;
 
-	static String REGEXP_FOR_combine_COMMAND = "^\\s*combine\\s+([a-zA-Z]\\w*)((\\s+([a-zA-Z]\\w*))*)\\s*(;|::|:)\\s*$";
+	static String REGEXP_FOR_combine_COMMAND = "^\\s*combine\\s+([a-zA-Z]\\w*)((\\s+([a-zA-Z]\\w*(=\\d+)?))*)\\s*(;|::|:)\\s*$";
 	static Pattern PATTERN_FOR_combine_COMMAND = Pattern.compile(REGEXP_FOR_combine_COMMAND);
-	static int GROUP_COMBINE_NAME = 1, GROUP_COMBINE_AUTOMATA = 2, GROUP_COMBINE_END = 5;
-	static String REGEXP_FOR_AN_AUTOMATON_IN_combine_COMMAND = "[a-zA-Z]\\w*";
+	static int GROUP_COMBINE_NAME = 1, GROUP_COMBINE_AUTOMATA = 2, GROUP_COMBINE_END = 6;
+	static String REGEXP_FOR_AN_AUTOMATON_IN_combine_COMMAND = "([a-zA-Z]\\w*)((=\\d+)?)";
 	static Pattern PATTERN_FOR_AN_AUTOMATON_IN_combine_COMMAND = Pattern.compile(REGEXP_FOR_AN_AUTOMATON_IN_combine_COMMAND);
 
 	static String REGEXP_FOR_morphism_COMMAND = "^\\s*morphism\\s+([a-zA-Z]\\w*)\\s+\"(\\d+\\s*\\-\\>\\s*(.)*(,\\d+\\s*\\-\\>\\s*(.)*)*)\"\\s*(;|::|:)\\s*$";
@@ -532,10 +532,23 @@ public class Prover {
 
 
 		List<String> automataNames = new ArrayList<String>();
+		List<Integer> outputs = new ArrayList<Integer>();
+		int argumentCounter = 0;
 
 		Matcher m1 = PATTERN_FOR_AN_AUTOMATON_IN_combine_COMMAND.matcher(m.group(GROUP_COMBINE_AUTOMATA));
 		while(m1.find()) {
-			String t = m1.group();
+			argumentCounter++;
+			String t = m1.group(1);
+			String u = m1.group(2);
+			// if no output is specified for a subautomaton, the default output is the index of the subautomaton in the argument list
+			if (u.isEmpty()) {
+				outputs.add(argumentCounter);
+			}
+			else {
+				u = u.substring(1);
+				// remove colon then convert string to integer
+				outputs.add(Integer.parseInt(u));
+			}
 			automataNames.add(t);
 		}
 
@@ -545,7 +558,7 @@ public class Prover {
 		Automaton first = new Automaton(UtilityMethods.get_address_for_automata_library()+automataNames.get(0)+".txt");
 		automataNames.remove(0);
 
-		Automaton C = first.combine(automataNames, printSteps, prefix, log);
+		Automaton C = first.combine(automataNames, outputs, printSteps, prefix, log);
 		// currently drawing DFAOs is not supported, so outputs are not shown in the drawing
 		C.draw(UtilityMethods.get_address_for_result()+m.group(GROUP_COMBINE_NAME)+".gv", s);
 		C.write(UtilityMethods.get_address_for_result()+m.group(GROUP_COMBINE_NAME)+".txt");
@@ -589,23 +602,17 @@ public class Prover {
 		if (!h.isUniform()) {
 			throw new Exception("A morphism applied to a word automaton must be uniform.");
 		}
-		Integer domainMax = Collections.max(h.mapping.keySet());
+		Set<Integer> keys = h.mapping.keySet();
 		String combineString = "combine " + m.group(GROUP_IMAGE_NEW_NAME);
 		// we construct a define command for a DFA for each x that accepts iff x appears at the nth position
-		for (Integer i=0; i<=domainMax; i++) {
-			eval_def_commands(h.makeInterCommand(i, domainMax, m.group(GROUP_IMAGE_OLD_NAME)));
-			combineString += " " + m.group(GROUP_IMAGE_OLD_NAME) + "_" + i.toString();
+		for (Integer value : h.range) {
+			eval_def_commands(h.makeInterCommand(value, m.group(GROUP_IMAGE_OLD_NAME)));
+			combineString += " " + m.group(GROUP_IMAGE_OLD_NAME) + "_" + value.toString() + "=" + value.toString();
 		}
 		combineString += ":";
-		// The combined automaton will be the result of applying h to the old one, except all outputs will be offset by 1, since
-		// the combined automaton only outputs zero when none of the input automata accept. We decrease all outputs by 1 and then
-		// redraw and rewrite the requisite files
+
 		TestCase retrieval = combineCommand(combineString);
-		
 		Automaton I = retrieval.result.clone();
-		for (int i=0; i<I.O.size(); i++) {
-			I.O.set(i, I.O.get(i)-1);
-		}
 		
 		I.draw(UtilityMethods.get_address_for_result()+m.group(GROUP_IMAGE_NEW_NAME)+".gv", s);
 		I.write(UtilityMethods.get_address_for_result()+m.group(GROUP_IMAGE_NEW_NAME)+".txt");

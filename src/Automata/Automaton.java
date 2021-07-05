@@ -206,6 +206,9 @@ public class Automaton {
     // for use in the combine command, counts how many products we have taken so far, and hence what to set outputs to
     public int combineIndex;
 
+    // for use in the combine command, allows crossProduct to determine what to set outputs to
+    public List<Integer> combineOutputs;
+
     void make_adjacent(Integer K[]) {
         int q, t;
         for( q = 0; q <= num_states; ++q ) {
@@ -1015,7 +1018,7 @@ public class Automaton {
                 N.O.add((O.get(p) >= M.O.get(q)) ? 1 : 0);
                 break;
             case "combine":
-                N.O.add((M.O.get(q) == 1) ? (combineIndex + 1) : O.get(p));
+                N.O.add((M.O.get(q) == 1) ? combineOutputs.get(combineIndex) : O.get(p));
             }
 
             for(int x:d.get(p).keySet()){
@@ -1306,21 +1309,24 @@ public class Automaton {
         return X.equals(Y);
     }
 
-    public Automaton combine(List<String> automataNames, boolean print, String prefix, StringBuffer log) throws Exception {
+    public Automaton combine(List<String> automataNames, List<Integer> outputs, boolean print, String prefix, StringBuffer log) throws Exception {
         Queue<Automaton> subautomata =  new LinkedList<Automaton>();
 		for (String name : automataNames) {
 			Automaton M = new Automaton(UtilityMethods.get_address_for_automata_library()+name+".txt");
 			subautomata.add(M);
 		}
+
 		Automaton first = this.clone();
 	
 		// In an automaton without output, every non-zero output value represents an accepting state
+        // we change this to correspond to the value assigned to the first automaton by our command
 		for (int q = 0; q < first.Q; q++) {
 			if (first.O.get(q) != 0) {
-				first.O.set(q, 1);
+				first.O.set(q, outputs.get(0));
 			}
 		}
 		first.combineIndex = 1;
+        first.combineOutputs = outputs;
 		while (subautomata.size() > 0) {
 			Automaton next = subautomata.remove();
 			// potentially add logging later
@@ -1334,6 +1340,7 @@ public class Automaton {
             next.totalize(print,prefix+" ",log);
 			Automaton product = first.crossProduct(next, "combine", print, prefix, log);
 			product.combineIndex = first.combineIndex + 1;
+            product.combineOutputs = first.combineOutputs;
 			first = product;
 		}
         return first;
