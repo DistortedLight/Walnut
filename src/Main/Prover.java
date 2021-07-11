@@ -575,6 +575,10 @@ public class Prover {
 		String name = m.group(GROUP_MORPHISM_NAME);
 
 		Morphism M = new Morphism(name, m.group(GROUP_MORPHISM_DEFINITION));
+		System.out.print("Defined with domain ");
+        System.out.print(M.mapping.keySet());
+        System.out.print(" and range ");
+        System.out.print(M.range);
 		M.write(UtilityMethods.get_address_for_result()+name+".txt");
 		M.write(UtilityMethods.get_address_for_morphism_library()+name+".txt");
 	}
@@ -604,9 +608,17 @@ public class Prover {
 		}
 		Set<Integer> keys = h.mapping.keySet();
 		String combineString = "combine " + m.group(GROUP_IMAGE_NEW_NAME);
+
+		// We need to know the number system of our old automaton: the new one should match, as should intermediary expressions
+		Automaton M =  new Automaton(UtilityMethods.get_address_for_words_library()+m.group(GROUP_IMAGE_OLD_NAME)+".txt");
+		String numSysName = "";
+		if (M.NS.size() > 0) {
+			numSysName = M.NS.get(0).toString();
+		}
+
 		// we construct a define command for a DFA for each x that accepts iff x appears at the nth position
 		for (Integer value : h.range) {
-			eval_def_commands(h.makeInterCommand(value, m.group(GROUP_IMAGE_OLD_NAME)));
+			eval_def_commands(h.makeInterCommand(value, m.group(GROUP_IMAGE_OLD_NAME), numSysName));
 			combineString += " " + m.group(GROUP_IMAGE_OLD_NAME) + "_" + value.toString() + "=" + value.toString();
 		}
 		combineString += ":";

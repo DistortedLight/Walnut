@@ -66,10 +66,6 @@ public class Morphism {
                 range.add(number);
             }
         }
-        System.out.print("Defined with domain ");
-        System.out.print(mapping.keySet());
-        System.out.print(" and range ");
-        System.out.print(range);
     }
 
     // Reads the entirety of a file and passes this into the more general constructor
@@ -152,9 +148,12 @@ public class Morphism {
 
     // Generates a command to define an intermediary word automaton given an integer i that accepts iff an i appears in position n of a word
     // These can then be combined efficiently with a combine command as they have disjoint domains
-    public String makeInterCommand(Integer i, String baseAutomatonName) {
+    public String makeInterCommand(Integer i, String baseAutomatonName, String numSys) {
+        if (numSys != "") {
+            numSys = "?" + numSys;
+        }
         String interCommand = "def " + baseAutomatonName + "_" + i.toString();
-		interCommand += " \"E q, r (n=" + length.toString() + "*q+r & r<5";
+		interCommand += " \"" + numSys + " E q, r (n=" + length.toString() + "*q+r & r<" + length.toString();
 		for (Integer key : this.mapping.keySet()) {
 			boolean exists = false;
 			String clause = " & (" + baseAutomatonName + "[q]";
