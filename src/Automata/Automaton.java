@@ -209,6 +209,12 @@ public class Automaton {
     // for use in the combine command, allows crossProduct to determine what to set outputs to
     public List<Integer> combineOutputs;
 
+    // for use in inf command, keeps track of which states we have visited
+    public HashSet<Integer> visited;
+
+    // for use in inf command, records where we started our depth first search to find a cycle
+    public Integer started;
+
     void make_adjacent(Integer K[]) {
         int q, t;
         for( q = 0; q <= num_states; ++q ) {
@@ -1344,6 +1350,36 @@ public class Automaton {
 			first = product;
 		}
         return first;
+    }
+
+    // Determines whether an automaton accepts infinitely many values. This is true iff there exists a cycle in a minimized
+    // version of the automaton
+    public boolean infinite() {
+        for (int i=0; i<Q; i++) {
+            visited = new HashSet<Integer>();
+            started = i;
+            if(infiniteHelper(i)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // helper function for our DFS to facilitate recursion
+    private boolean infiniteHelper(Integer state) {
+        if(visited.contains(state)) {
+            return state == started;
+        }
+        visited.add(state);
+        for (Integer x : d.get(state).keySet()) {
+            for (Integer y : d.get(state).get(x)) {
+                if (infiniteHelper(y)) {
+                    return true;
+                }
+            }
+        }
+        visited.remove(state);
+        return false;
     }
 
     public void applyAllRepresentations() throws Exception{

@@ -41,7 +41,7 @@ import Automata.OstrowskiNumeration;
  * @author Hamoon
  */
 public class Prover {
-	static String REGEXP_FOR_THE_LIST_OF_COMMANDS = "(eval|def|macro|reg|load|ost|exit|quit|cls|clear|combine|morphism|promote|image)";
+	static String REGEXP_FOR_THE_LIST_OF_COMMANDS = "(eval|def|macro|reg|load|ost|exit|quit|cls|clear|combine|morphism|promote|image|inf)";
 	static String REGEXP_FOR_EMPTY_COMMAND = "^\\s*(;|::|:)\\s*$";
 	/**
 	 * the high-level scheme of a command is a name followed by some arguments and ending in either ; : or ::
@@ -113,6 +113,10 @@ public class Prover {
 	static String REGEXP_FOR_image_COMMAND = "^\\s*image\\s+([a-zA-Z]\\w*)\\s+([a-zA-Z]\\w*)\\s+([a-zA-Z]\\w*)\\s*(;|::|:)\\s*$";
 	static Pattern PATTERN_FOR_image_COMMAND = Pattern.compile(REGEXP_FOR_image_COMMAND);
 	static int GROUP_IMAGE_NEW_NAME = 1, GROUP_IMAGE_MORPHISM = 2, GROUP_IMAGE_OLD_NAME = 3;
+
+	static String REGEXP_FOR_inf_COMMAND = "^\\s*inf\\s+([a-zA-Z]\\w*)\\s*(;|::|:)\\s*$";
+	static Pattern PATTERN_FOR_inf_COMMAND = Pattern.compile(REGEXP_FOR_inf_COMMAND);
+	static int GROUP_INF_NAME = 1;
 
 	/**
 	 * if the command line argument is not empty, we treat args[0] as a filename.
@@ -274,6 +278,8 @@ public class Prover {
 			promoteCommand(s);
 		} else if (commandName.equals("image")) {
 			imageCommand(s);
+		} else if (commandName.equals("inf")) {
+			infCommand(s);
 		} else {
 			throw new Exception("Invalid command " + commandName + ".");
 		}
@@ -310,8 +316,7 @@ public class Prover {
 			return promoteCommand(s);
 		} else if(commandName.equals("image")) {
 			return imageCommand(s);
-		}
-		else {
+		} else {
 			throw new Exception("Invalid command: " + commandName);
 		}
 		return null;
@@ -630,6 +635,15 @@ public class Prover {
 		I.write(UtilityMethods.get_address_for_result()+m.group(GROUP_IMAGE_NEW_NAME)+".txt");
 		I.write(UtilityMethods.get_address_for_words_library()+m.group(GROUP_IMAGE_NEW_NAME)+".txt");
 		return new TestCase(s,I,"","","");
+	}
+
+	public static void infCommand(String s) throws Exception {
+		Matcher m = PATTERN_FOR_inf_COMMAND.matcher(s);
+		if(!m.find()) {
+			throw new Exception("Invalid use of inf command.");
+		}
+		Automaton M = new Automaton(UtilityMethods.get_address_for_automata_library()+m.group(GROUP_INF_NAME)+".txt");
+		System.out.println(M.infinite());
 	}
 
 	public static void ostCommand(String s) throws Exception {
