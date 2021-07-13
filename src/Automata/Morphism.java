@@ -91,7 +91,7 @@ public class Morphism {
     }
 
     public Automaton toWordAutomaton() throws Exception {
-        int maxImageLength = 0;
+        Integer maxImageLength = 0;
         for (int x : mapping.keySet()) {
             int length = mapping.get(x).size();
             if (length > maxImageLength) {
@@ -123,7 +123,8 @@ public class Morphism {
         }
         // this word automaton is purely symbolic in input and we want it in the exact order given
         promotion.canonized = true;
-        promotion.NS.add(null);
+        // the base for the automata is the length of the longest image of any letter under the morphism
+        promotion.NS.add(new NumberSystem("msd_" + maxImageLength.toString()));
 
         return promotion;
     }
