@@ -24,12 +24,12 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.TreeMap;
+import java.util.Set;
 import Automata.Automaton;
 import Automata.Morphism;
 import Automata.NumberSystem;
@@ -41,7 +41,7 @@ import Automata.OstrowskiNumeration;
  * @author Hamoon
  */
 public class Prover {
-	static String REGEXP_FOR_THE_LIST_OF_COMMANDS = "(eval|def|macro|reg|load|ost|exit|quit|cls|clear|combine|morphism|promote)";
+	static String REGEXP_FOR_THE_LIST_OF_COMMANDS = "(eval|def|macro|reg|load|ost|exit|quit|cls|clear|combine|morphism|promote|image|inf)";
 	static String REGEXP_FOR_EMPTY_COMMAND = "^\\s*(;|::|:)\\s*$";
 	/**
 	 * the high-level scheme of a command is a name followed by some arguments and ending in either ; : or ::
@@ -96,10 +96,10 @@ public class Prover {
 	static int GROUP_OST_PERIOD = 4;
 	static int GROUP_OST_END = 6;
 
-	static String REGEXP_FOR_combine_COMMAND = "^\\s*combine\\s+([a-zA-Z]\\w*)((\\s+([a-zA-Z]\\w*))*)\\s*(;|::|:)\\s*$";
+	static String REGEXP_FOR_combine_COMMAND = "^\\s*combine\\s+([a-zA-Z]\\w*)((\\s+([a-zA-Z]\\w*(=\\d+)?))*)\\s*(;|::|:)\\s*$";
 	static Pattern PATTERN_FOR_combine_COMMAND = Pattern.compile(REGEXP_FOR_combine_COMMAND);
-	static int GROUP_COMBINE_NAME = 1, GROUP_COMBINE_AUTOMATA = 2, GROUP_COMBINE_END = 5;
-	static String REGEXP_FOR_AN_AUTOMATON_IN_combine_COMMAND = "[a-zA-Z]\\w*";
+	static int GROUP_COMBINE_NAME = 1, GROUP_COMBINE_AUTOMATA = 2, GROUP_COMBINE_END = 6;
+	static String REGEXP_FOR_AN_AUTOMATON_IN_combine_COMMAND = "([a-zA-Z]\\w*)((=\\d+)?)";
 	static Pattern PATTERN_FOR_AN_AUTOMATON_IN_combine_COMMAND = Pattern.compile(REGEXP_FOR_AN_AUTOMATON_IN_combine_COMMAND);
 
 	static String REGEXP_FOR_morphism_COMMAND = "^\\s*morphism\\s+([a-zA-Z]\\w*)\\s+\"(\\d+\\s*\\-\\>\\s*(.)*(,\\d+\\s*\\-\\>\\s*(.)*)*)\"\\s*(;|::|:)\\s*$";
@@ -109,6 +109,14 @@ public class Prover {
 	static String REGEXP_FOR_promote_COMMAND = "^\\s*promote\\s+([a-zA-Z]\\w*)\\s+([a-zA-Z]\\w*)\\s*(;|::|:)\\s*$";
 	static Pattern PATTERN_FOR_promote_COMMAND = Pattern.compile(REGEXP_FOR_promote_COMMAND);
 	static int GROUP_PROMOTE_NAME = 1, GROUP_PROMOTE_MORPHISM = 2;
+
+	static String REGEXP_FOR_image_COMMAND = "^\\s*image\\s+([a-zA-Z]\\w*)\\s+([a-zA-Z]\\w*)\\s+([a-zA-Z]\\w*)\\s*(;|::|:)\\s*$";
+	static Pattern PATTERN_FOR_image_COMMAND = Pattern.compile(REGEXP_FOR_image_COMMAND);
+	static int GROUP_IMAGE_NEW_NAME = 1, GROUP_IMAGE_MORPHISM = 2, GROUP_IMAGE_OLD_NAME = 3;
+
+	static String REGEXP_FOR_inf_COMMAND = "^\\s*inf\\s+([a-zA-Z]\\w*)\\s*(;|::|:)\\s*$";
+	static Pattern PATTERN_FOR_inf_COMMAND = Pattern.compile(REGEXP_FOR_inf_COMMAND);
+	static int GROUP_INF_NAME = 1;
 
 	/**
 	 * if the command line argument is not empty, we treat args[0] as a filename.
@@ -268,6 +276,10 @@ public class Prover {
 			morphismCommand(s);
 		} else if (commandName.equals("promote")) {
 			promoteCommand(s);
+		} else if (commandName.equals("image")) {
+			imageCommand(s);
+		} else if (commandName.equals("inf")) {
+			infCommand(s);
 		} else {
 			throw new Exception("Invalid command " + commandName + ".");
 		}
@@ -300,6 +312,10 @@ public class Prover {
 			return regCommand(s);
 		} else if(commandName.equals("combine")) {
 			return combineCommand(s);
+		} else if(commandName.equals("promote")) {
+			return promoteCommand(s);
+		} else if(commandName.equals("image")) {
+			return imageCommand(s);
 		} else {
 			throw new Exception("Invalid command: " + commandName);
 		}
@@ -521,10 +537,23 @@ public class Prover {
 
 
 		List<String> automataNames = new ArrayList<String>();
+		List<Integer> outputs = new ArrayList<Integer>();
+		int argumentCounter = 0;
 
 		Matcher m1 = PATTERN_FOR_AN_AUTOMATON_IN_combine_COMMAND.matcher(m.group(GROUP_COMBINE_AUTOMATA));
 		while(m1.find()) {
-			String t = m1.group();
+			argumentCounter++;
+			String t = m1.group(1);
+			String u = m1.group(2);
+			// if no output is specified for a subautomaton, the default output is the index of the subautomaton in the argument list
+			if (u.isEmpty()) {
+				outputs.add(argumentCounter);
+			}
+			else {
+				u = u.substring(1);
+				// remove colon then convert string to integer
+				outputs.add(Integer.parseInt(u));
+			}
 			automataNames.add(t);
 		}
 
@@ -534,7 +563,7 @@ public class Prover {
 		Automaton first = new Automaton(UtilityMethods.get_address_for_automata_library()+automataNames.get(0)+".txt");
 		automataNames.remove(0);
 
-		Automaton C = first.combine(automataNames, printSteps, prefix, log);
+		Automaton C = first.combine(automataNames, outputs, printSteps, prefix, log);
 		// currently drawing DFAOs is not supported, so outputs are not shown in the drawing
 		C.draw(UtilityMethods.get_address_for_result()+m.group(GROUP_COMBINE_NAME)+".gv", s);
 		C.write(UtilityMethods.get_address_for_result()+m.group(GROUP_COMBINE_NAME)+".txt");
@@ -551,6 +580,10 @@ public class Prover {
 		String name = m.group(GROUP_MORPHISM_NAME);
 
 		Morphism M = new Morphism(name, m.group(GROUP_MORPHISM_DEFINITION));
+		System.out.print("Defined with domain ");
+        System.out.print(M.mapping.keySet());
+        System.out.print(" and range ");
+        System.out.print(M.range);
 		M.write(UtilityMethods.get_address_for_result()+name+".txt");
 		M.write(UtilityMethods.get_address_for_morphism_library()+name+".txt");
 	}
@@ -567,6 +600,50 @@ public class Prover {
 		P.write(UtilityMethods.get_address_for_words_library()+m.group(GROUP_PROMOTE_NAME)+".txt");
 
 		return new TestCase(s,P,"","","");
+	}
+
+	public static TestCase imageCommand(String s) throws Exception {
+		Matcher m = PATTERN_FOR_image_COMMAND.matcher(s);
+		if(!m.find()) {
+			throw new Exception("Invalid use of promote command.");
+		}
+		Morphism h = new Morphism(UtilityMethods.get_address_for_morphism_library()+m.group(GROUP_IMAGE_MORPHISM)+".txt");
+		if (!h.isUniform()) {
+			throw new Exception("A morphism applied to a word automaton must be uniform.");
+		}
+		Set<Integer> keys = h.mapping.keySet();
+		String combineString = "combine " + m.group(GROUP_IMAGE_NEW_NAME);
+
+		// We need to know the number system of our old automaton: the new one should match, as should intermediary expressions
+		Automaton M =  new Automaton(UtilityMethods.get_address_for_words_library()+m.group(GROUP_IMAGE_OLD_NAME)+".txt");
+		String numSysName = "";
+		if (M.NS.size() > 0) {
+			numSysName = M.NS.get(0).toString();
+		}
+
+		// we construct a define command for a DFA for each x that accepts iff x appears at the nth position
+		for (Integer value : h.range) {
+			eval_def_commands(h.makeInterCommand(value, m.group(GROUP_IMAGE_OLD_NAME), numSysName));
+			combineString += " " + m.group(GROUP_IMAGE_OLD_NAME) + "_" + value.toString() + "=" + value.toString();
+		}
+		combineString += ":";
+
+		TestCase retrieval = combineCommand(combineString);
+		Automaton I = retrieval.result.clone();
+		
+		I.draw(UtilityMethods.get_address_for_result()+m.group(GROUP_IMAGE_NEW_NAME)+".gv", s);
+		I.write(UtilityMethods.get_address_for_result()+m.group(GROUP_IMAGE_NEW_NAME)+".txt");
+		I.write(UtilityMethods.get_address_for_words_library()+m.group(GROUP_IMAGE_NEW_NAME)+".txt");
+		return new TestCase(s,I,"","","");
+	}
+
+	public static void infCommand(String s) throws Exception {
+		Matcher m = PATTERN_FOR_inf_COMMAND.matcher(s);
+		if(!m.find()) {
+			throw new Exception("Invalid use of inf command.");
+		}
+		Automaton M = new Automaton(UtilityMethods.get_address_for_automata_library()+m.group(GROUP_INF_NAME)+".txt");
+		System.out.println(M.infinite());
 	}
 
 	public static void ostCommand(String s) throws Exception {

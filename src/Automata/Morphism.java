@@ -24,6 +24,7 @@ import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Collections;
 import java.util.stream.Collectors;
@@ -45,14 +46,26 @@ public class Morphism {
     // The name of the morphism
     public String name;
 
+    // The uniform length of the image of a letter, when applicable
+    public Integer length;
+
     // The mapping between each letter of the alphabet and its image under the morphism
     public TreeMap<Integer, List<Integer>> mapping;
+
+    // The set of values in the image of the morphism
+    public HashSet<Integer> range;
 
     // The syntax for declaring a morphism in the command line is identical to that
     // of a saved morphism file, so we reuse this constructor
     public Morphism(String name, String mapString) throws Exception {
         this.name = name;
         this.mapping = ParseMethods.parseMorphism(mapString);
+        this.range = new HashSet<Integer>();
+        for (Integer key : mapping.keySet()) {
+            for (Integer number : mapping.get(key)) {
+                range.add(number);
+            }
+        }
     }
 
     // Reads the entirety of a file and passes this into the more general constructor
@@ -78,7 +91,7 @@ public class Morphism {
     }
 
     public Automaton toWordAutomaton() throws Exception {
-        int maxImageLength = 0;
+        Integer maxImageLength = 0;
         for (int x : mapping.keySet()) {
             int length = mapping.get(x).size();
             if (length > maxImageLength) {
@@ -110,7 +123,8 @@ public class Morphism {
         }
         // this word automaton is purely symbolic in input and we want it in the exact order given
         promotion.canonized = true;
-        promotion.NS.add(null);
+        // the base for the automata is the length of the longest image of any letter under the morphism
+        promotion.NS.add(new NumberSystem("msd_" + maxImageLength.toString()));
 
         return promotion;
     }
@@ -119,52 +133,50 @@ public class Morphism {
     // has the same length.
     public boolean isUniform() {
         boolean firstElement = true;
-        int length = 0;
+        int imageLength = 0;
         for (int x : mapping.keySet()) {
             if (firstElement) {
-                length = mapping.get(x).size();
+                imageLength = mapping.get(x).size();
                 firstElement = false;
             }
-            else if (mapping.get(x).size() != length) {
+            else if (mapping.get(x).size() != imageLength) {
                 return false;
             }
         }
+        this.length = imageLength;
         return true;
     }
 
     // Generates a command to define an intermediary word automaton given an integer i that accepts iff an i appears in position n of a word
     // These can then be combined efficiently with a combine command as they have disjoint domains
-    public String makeInterCommand(Integer i, Integer domainMax, String baseAutomatonName) {
-        Integer imageLength = this.mapping.get(domainMax).size();
+    public String makeInterCommand(Integer i, String baseAutomatonName, String numSys) {
+        if (numSys != "") {
+            numSys = "?" + numSys;
+        }
         String interCommand = "def " + baseAutomatonName + "_" + i.toString();
-		interCommand += " \"E q, r (n=" + imageLength.toString() + "*q+r & r<5";
-		for (Integer j=0; j<=domainMax; j++) {
-			if (this.mapping.keySet().contains(j)) {
-				boolean exists = false;
-				String clause = " & (" + baseAutomatonName + "[q]";
-                List<Integer> symbolImage = this.mapping.get(j);
-				for (Integer k=0; k<symbolImage.size(); k++) {
-    				if (symbolImage.get(k) == i) {
-						if(! exists) {
-							clause += "= @" + j.toString() + " => (r=" + k.toString();
-							exists = true;
-						}
-						else {
-							clause += "|r=" + k.toString();
-						}
+		interCommand += " \"" + numSys + " E q, r (n=" + length.toString() + "*q+r & r<" + length.toString();
+		for (Integer key : this.mapping.keySet()) {
+			boolean exists = false;
+			String clause = " & (" + baseAutomatonName + "[q]";
+            List<Integer> symbolImage = this.mapping.get(key);
+			for (Integer j=0; j<symbolImage.size(); j++) {
+    			if (symbolImage.get(j) == i) {
+					if(! exists) {
+						clause += "= @" + key.toString() + " => (r=" + j.toString();
+						exists = true;
+					}
+					else {
+						clause += "|r=" + j.toString();
 					}
 				}
-				if (exists) {
-					clause += "))";
-				}
-				else {
-					clause += "!= @" + j.toString() + ")";
-				}
-				interCommand += clause;
+			}
+			if (exists) {
+				clause += "))";
 			}
 			else {
-				interCommand += " & (" + baseAutomatonName + "[q] != @" + j.toString() + ")";
+				clause += "!= @" + key.toString() + ")";
 			}
+			interCommand += clause;
 		}
 		interCommand += ")\":";
         return interCommand;

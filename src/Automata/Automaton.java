@@ -206,6 +206,15 @@ public class Automaton {
     // for use in the combine command, counts how many products we have taken so far, and hence what to set outputs to
     public int combineIndex;
 
+    // for use in the combine command, allows crossProduct to determine what to set outputs to
+    public List<Integer> combineOutputs;
+
+    // for use in inf command, keeps track of which states we have visited
+    public HashSet<Integer> visited;
+
+    // for use in inf command, records where we started our depth first search to find a cycle
+    public Integer started;
+
     void make_adjacent(Integer K[]) {
         int q, t;
         for( q = 0; q <= num_states; ++q ) {
@@ -1015,7 +1024,7 @@ public class Automaton {
                 N.O.add((O.get(p) >= M.O.get(q)) ? 1 : 0);
                 break;
             case "combine":
-                N.O.add((M.O.get(q) == 1) ? (combineIndex + 1) : O.get(p));
+                N.O.add((M.O.get(q) == 1) ? combineOutputs.get(combineIndex) : O.get(p));
             }
 
             for(int x:d.get(p).keySet()){
@@ -1306,21 +1315,24 @@ public class Automaton {
         return X.equals(Y);
     }
 
-    public Automaton combine(List<String> automataNames, boolean print, String prefix, StringBuffer log) throws Exception {
+    public Automaton combine(List<String> automataNames, List<Integer> outputs, boolean print, String prefix, StringBuffer log) throws Exception {
         Queue<Automaton> subautomata =  new LinkedList<Automaton>();
 		for (String name : automataNames) {
 			Automaton M = new Automaton(UtilityMethods.get_address_for_automata_library()+name+".txt");
 			subautomata.add(M);
 		}
+
 		Automaton first = this.clone();
 	
 		// In an automaton without output, every non-zero output value represents an accepting state
+        // we change this to correspond to the value assigned to the first automaton by our command
 		for (int q = 0; q < first.Q; q++) {
 			if (first.O.get(q) != 0) {
-				first.O.set(q, 1);
+				first.O.set(q, outputs.get(0));
 			}
 		}
 		first.combineIndex = 1;
+        first.combineOutputs = outputs;
 		while (subautomata.size() > 0) {
 			Automaton next = subautomata.remove();
 			// potentially add logging later
@@ -1329,11 +1341,45 @@ public class Automaton {
             // input alphabets and arities are assumed to be identical for the combine method
             first.randomLabel();
             next.label = first.label;
+            // crossProduct requires both automata to be totalized, otherwise it has no idea which cartesian states to transition to
+            first.totalize(print,prefix+" ",log);
+            next.totalize(print,prefix+" ",log);
 			Automaton product = first.crossProduct(next, "combine", print, prefix, log);
 			product.combineIndex = first.combineIndex + 1;
+            product.combineOutputs = first.combineOutputs;
 			first = product;
 		}
         return first;
+    }
+
+    // Determines whether an automaton accepts infinitely many values. This is true iff there exists a cycle in a minimized
+    // version of the automaton
+    public boolean infinite() {
+        for (int i=0; i<Q; i++) {
+            visited = new HashSet<Integer>();
+            started = i;
+            if(infiniteHelper(i)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // helper function for our DFS to facilitate recursion
+    private boolean infiniteHelper(Integer state) {
+        if(visited.contains(state)) {
+            return state == started;
+        }
+        visited.add(state);
+        for (Integer x : d.get(state).keySet()) {
+            for (Integer y : d.get(state).get(x)) {
+                if (infiniteHelper(y)) {
+                    return true;
+                }
+            }
+        }
+        visited.remove(state);
+        return false;
     }
 
     public void applyAllRepresentations() throws Exception{

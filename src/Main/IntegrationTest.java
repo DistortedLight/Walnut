@@ -82,6 +82,7 @@ public class IntegrationTest {
 			Prover.dispatchForIntegrationTest("load paperfolding_trapezoidal_tests.txt;");
 			Prover.dispatchForIntegrationTest("load period_doubling_tests.txt;");
 			Prover.dispatchForIntegrationTest("load fibonacci_tests.txt;");
+			Prover.dispatchForIntegrationTest("load morphism_image_tests.txt;");
 
 			Prover.dispatchForIntegrationTest("macro palindrome \"?%0 Ak (k<n) => %1[i+k] = %1[i+n-1-k]\";");
 			//Prover.dispatchForIntegrationTest("macro factoreq \"%0 Ak (%4<n) => %1[%2+k]=%1[%3+k]\"");
@@ -535,6 +536,10 @@ public class IntegrationTest {
 		L.add("eval test391 \"#border(msd_fib,fibonacci)\";");
 		L.add("eval test392 \"#border(msd_2,rudin)\";");
 		L.add("eval test393 \"#border(msd_2,paperfolding)\";");
+
+		// eval tests based on morphism and image commands
+		L.add("eval test394 \"Ai,j,n (n>=3) => ~$fsrevchk(i,j,n)\";");
+		L.add("eval test395 \"~Ep,n (p>=1) & (Ai (i>=n) => FS[i]=FS[i+p])\";");
 
 
 	}

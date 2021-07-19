@@ -1,0 +1,5 @@
+morphism revmor "0->0012 1->0112";
+
+image FS revmor T;
+
+def fsrevchk "As,t (s>=i & t>=j & s+t+1=i+j+n) => FS[s]=FS[t]";
