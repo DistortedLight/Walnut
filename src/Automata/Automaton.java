@@ -1354,7 +1354,17 @@ public class Automaton {
 
     // Determines whether an automaton accepts infinitely many values. This is true iff there exists a cycle in a minimized
     // version of the automaton
-    public boolean infinite() {
+    public boolean infinite() throws Exception {
+        // make sure the automaton is minimized
+        minimize(false, "", null);
+
+        // leading zeroes do not change the value of an input, so we need to look for a cycle that isn't from q_0 to q_0 on a 0
+        // if we are in msd
+        if(NS.get(0).isMsd()) {
+            // to remove 0 from the list of transitions from state 0 on input 0, we need to pass the object 0 into remove,
+            // rather than the primitive 0 which is treated as an index
+            d.get(0).get(0).remove((Integer) 0);
+        }
         for (int i=0; i<Q; i++) {
             visited = new HashSet<Integer>();
             started = i;
@@ -1623,11 +1633,12 @@ public class Automaton {
     /**
      * Writes down this automaton to a .gv file given by the address. It uses the predicate that
      * caused this automaton as the label of this drawing.
-     * This automaton can be a non deterministic automaton but cannot be a DFAO. In case of a DFAO the drawing
-     * does not contain state outputs.
+     * Unlike prior versions of Walnut, this automaton can be a non deterministic automaton and also a DFAO. 
+     * In case of a DFAO the drawing contains state outputs with a slash (eg. "0/2" represents an output
+     * of 2 from state 0)
      * @param address
      */
-    public void draw(String address,String predicate)throws Exception{
+    public void draw(String address,String predicate, boolean isDFAO)throws Exception{
         GraphViz gv = new GraphViz();
         if(TRUE_FALSE_AUTOMATON){
             gv.addln(gv.start_graph());
@@ -1649,7 +1660,9 @@ public class Automaton {
             gv.addln("label = \""+ UtilityMethods.toTuple(label) +": "+predicate+"\";");
             gv.addln("rankdir = LR;");
             for(int q = 0 ; q < Q;q++){
-                if(O.get(q)!=0)
+                if(isDFAO)
+                    gv.addln("node [shape = circle, label=\""+q+"/"+O.get(q)+"\", fontsize=12]"+q +";");
+                else if(O.get(q)!=0)
                     gv.addln("node [shape = doublecircle, label=\""+q+"\", fontsize=12]"+q +";");
                 else
                     gv.addln("node [shape = circle, label=\""+q+"\", fontsize=12]"+q +";");

@@ -41,7 +41,7 @@ import Automata.OstrowskiNumeration;
  * @author Hamoon
  */
 public class Prover {
-	static String REGEXP_FOR_THE_LIST_OF_COMMANDS = "(eval|def|macro|reg|load|ost|exit|quit|cls|clear|combine|morphism|promote|image|inf)";
+	static String REGEXP_FOR_THE_LIST_OF_COMMANDS = "(eval|def|macro|reg|load|ost|exit|quit|cls|clear|combine|morphism|promote|image|inf|test)";
 	static String REGEXP_FOR_EMPTY_COMMAND = "^\\s*(;|::|:)\\s*$";
 	/**
 	 * the high-level scheme of a command is a name followed by some arguments and ending in either ; : or ::
@@ -117,6 +117,10 @@ public class Prover {
 	static String REGEXP_FOR_inf_COMMAND = "^\\s*inf\\s+([a-zA-Z]\\w*)\\s*(;|::|:)\\s*$";
 	static Pattern PATTERN_FOR_inf_COMMAND = Pattern.compile(REGEXP_FOR_inf_COMMAND);
 	static int GROUP_INF_NAME = 1;
+
+	static String REGEXP_FOR_test_COMMAND = "^\\s*test\\s+([a-zA-Z]\\w*)\\s*(\\d+)\\s*(;|::|:)\\s*$";
+	static Pattern PATTERN_FOR_test_COMMAND = Pattern.compile(REGEXP_FOR_test_COMMAND);
+	static int GROUP_TEST_NAME = 1, GROUP_TEST_NUM = 2;
 
 	/**
 	 * if the command line argument is not empty, we treat args[0] as a filename.
@@ -280,6 +284,8 @@ public class Prover {
 			imageCommand(s);
 		} else if (commandName.equals("inf")) {
 			infCommand(s);
+		} else if (commandName.equals("test")) {
+			testCommand(s);
 		} else {
 			throw new Exception("Invalid command " + commandName + ".");
 		}
@@ -516,7 +522,7 @@ public class Prover {
 			// in this case, there will only be one alphabet vector
 			R = new Automaton(baseexp,alphabets.get(0),ns);
 		}
-		R.draw(UtilityMethods.get_address_for_result()+m.group(R_NAME)+".gv",m.group(R_REGEXP));
+		R.draw(UtilityMethods.get_address_for_result()+m.group(R_NAME)+".gv",m.group(R_REGEXP), false);
 		R.write(UtilityMethods.get_address_for_result()+m.group(R_NAME)+".txt");
 		R.write(UtilityMethods.get_address_for_automata_library()+m.group(R_NAME)+".txt");
 
@@ -564,8 +570,7 @@ public class Prover {
 		automataNames.remove(0);
 
 		Automaton C = first.combine(automataNames, outputs, printSteps, prefix, log);
-		// currently drawing DFAOs is not supported, so outputs are not shown in the drawing
-		C.draw(UtilityMethods.get_address_for_result()+m.group(GROUP_COMBINE_NAME)+".gv", s);
+		C.draw(UtilityMethods.get_address_for_result()+m.group(GROUP_COMBINE_NAME)+".gv", s, true);
 		C.write(UtilityMethods.get_address_for_result()+m.group(GROUP_COMBINE_NAME)+".txt");
 		C.write(UtilityMethods.get_address_for_words_library()+m.group(GROUP_COMBINE_NAME)+".txt");
 
@@ -595,7 +600,7 @@ public class Prover {
 		}
 		Morphism h = new Morphism(UtilityMethods.get_address_for_morphism_library()+m.group(GROUP_PROMOTE_MORPHISM)+".txt");
 		Automaton P = h.toWordAutomaton();
-		P.draw(UtilityMethods.get_address_for_result()+m.group(GROUP_PROMOTE_NAME)+".gv", s);
+		P.draw(UtilityMethods.get_address_for_result()+m.group(GROUP_PROMOTE_NAME)+".gv", s, true);
 		P.write(UtilityMethods.get_address_for_result()+m.group(GROUP_PROMOTE_NAME)+".txt");
 		P.write(UtilityMethods.get_address_for_words_library()+m.group(GROUP_PROMOTE_NAME)+".txt");
 
@@ -631,7 +636,7 @@ public class Prover {
 		TestCase retrieval = combineCommand(combineString);
 		Automaton I = retrieval.result.clone();
 		
-		I.draw(UtilityMethods.get_address_for_result()+m.group(GROUP_IMAGE_NEW_NAME)+".gv", s);
+		I.draw(UtilityMethods.get_address_for_result()+m.group(GROUP_IMAGE_NEW_NAME)+".gv", s, true);
 		I.write(UtilityMethods.get_address_for_result()+m.group(GROUP_IMAGE_NEW_NAME)+".txt");
 		I.write(UtilityMethods.get_address_for_words_library()+m.group(GROUP_IMAGE_NEW_NAME)+".txt");
 		return new TestCase(s,I,"","","");
@@ -644,6 +649,13 @@ public class Prover {
 		}
 		Automaton M = new Automaton(UtilityMethods.get_address_for_automata_library()+m.group(GROUP_INF_NAME)+".txt");
 		System.out.println(M.infinite());
+	}
+
+	public static void testCommand(String s) throws Exception {
+		Matcher m = PATTERN_FOR_test_COMMAND.matcher(s);
+		if(!m.find()) {
+			throw new Exception("Invalid use of test command.");
+		}
 	}
 
 	public static void ostCommand(String s) throws Exception {
