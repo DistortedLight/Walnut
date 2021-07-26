@@ -642,13 +642,53 @@ public class Prover {
 		return new TestCase(s,I,"","","");
 	}
 
-	public static void infCommand(String s) throws Exception {
+	public static boolean infCommand(String s) throws Exception {
 		Matcher m = PATTERN_FOR_inf_COMMAND.matcher(s);
 		if(!m.find()) {
 			throw new Exception("Invalid use of inf command.");
 		}
 		Automaton M = new Automaton(UtilityMethods.get_address_for_automata_library()+m.group(GROUP_INF_NAME)+".txt");
-		System.out.println(M.infinite());
+		// we remove leading zeroes in the case of msd and trailing zeroes in the case of lsd
+		// to do this, we construct a reg subcommand that generates the complement of zero-prefixed strings for msd
+		// and zero suffixed strings for lsd, then intersect this with our original automaton
+		String removeZeroesReg = "";
+		String zero = "";
+		if (M.A.size() == 1) {
+			zero = "0";
+		}
+		else {
+			zero = "[" + String.join(",", Collections.nCopies(M.A.size(), "0")) + "]";
+		}
+
+		removeZeroesReg += "reg " + m.group(GROUP_INF_NAME) + "_rem0 ";
+		for (int i=0; i<M.A.size(); i++) {
+			String alphaString = M.A.get(i).toString();
+			alphaString = alphaString.substring(1, alphaString.length()-1);
+			alphaString = "{" + alphaString + "} ";
+			removeZeroesReg += alphaString;
+		}
+
+		if (M.NS.get(0).isMsd()) {
+			removeZeroesReg += "\"~(" + zero + ".*)\";";
+		}
+		else {
+			removeZeroesReg += "\"~(.*" + zero + ")\";";
+		}
+		TestCase retrieval = regCommand(removeZeroesReg);
+		Automaton R = retrieval.result.clone();
+		// and-ing automata uses the cross product routine, which requires labeled automata
+		M.randomLabel();
+		R.label = M.label;
+		M = M.and(R, false, null, null);
+		String infReg = M.infinite();
+		if (infReg == "") {
+			System.out.println("Automaton " + m.group(GROUP_INF_NAME) + " accepts finitely many values.");
+			return false;
+		}
+		else {
+			System.out.println(infReg);
+			return true;
+		}
 	}
 
 	public static void testCommand(String s) throws Exception {

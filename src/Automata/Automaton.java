@@ -1094,8 +1094,12 @@ public class Automaton {
             System.out.println(msg);
         }
 
+        totalize(print,prefix+" ",log);
+        M.totalize(print,prefix+" ",log);
         Automaton N = crossProduct(M,"&",print,prefix,log);
+
         N.minimize(print,prefix+" ",log);
+        N.applyAllRepresentations();
 
         long timeAfter = System.currentTimeMillis();
         if(print){
@@ -1352,44 +1356,140 @@ public class Automaton {
         return first;
     }
 
-    // Determines whether an automaton accepts infinitely many values. This is true iff there exists a cycle in a minimized
-    // version of the automaton
-    public boolean infinite() throws Exception {
+    // Determines whether an automaton accepts infinitely many values. If it does, a regex of infinitely many accepted values (not all)
+    // is given. This is true iff there exists a cycle in a minimized version of the automaton, which previously had leading or
+    // trailing zeroes removed according to whether it was msd or lsd
+    public String infinite() throws Exception {
         // make sure the automaton is minimized
         minimize(false, "", null);
 
-        // leading zeroes do not change the value of an input, so we need to look for a cycle that isn't from q_0 to q_0 on a 0
-        // if we are in msd
-        if(NS.get(0).isMsd()) {
-            // to remove 0 from the list of transitions from state 0 on input 0, we need to pass the object 0 into remove,
-            // rather than the primitive 0 which is treated as an index
-            d.get(0).get(0).remove((Integer) 0);
-        }
         for (int i=0; i<Q; i++) {
             visited = new HashSet<Integer>();
             started = i;
-            if(infiniteHelper(i)) {
-                return true;
+            String cycle = infiniteHelper(i, "");
+            // once a cycle is detected, we compute a prefix leading to state i and a suffix from state i to an accepting state
+            if(cycle != "") {
+                return constructPrefix(i) + "(" + cycle + ")*" + constructSuffix(i);
             }
         }
-        return false;
+        return ""; // an empty string signals that we have failed to find a cycle
     }
 
     // helper function for our DFS to facilitate recursion
-    private boolean infiniteHelper(Integer state) {
+    private String infiniteHelper(Integer state, String result) {
         if(visited.contains(state)) {
-            return state == started;
+            if(state == started) {
+                return result;
+            }
+            return "";
         }
         visited.add(state);
         for (Integer x : d.get(state).keySet()) {
             for (Integer y : d.get(state).get(x)) {
-                if (infiniteHelper(y)) {
-                    return true;
+                // this adds brackets even when inputs have arity 1 - this is fine, since we just want a usable infinite regex
+                String cycle = infiniteHelper(y, result + decode(x).toString());
+                if (cycle != "") {
+                    return cycle;
                 }
             }
         }
         visited.remove(state);
-        return false;
+        return "";
+    }
+
+    // helper function for inf, finds an input string that leads from q0 to the specified state
+    private String constructPrefix(Integer target) {
+        List<Integer> distance = new ArrayList<Integer>(Collections.nCopies(Q, -1));
+        List<Integer> prev = new ArrayList<Integer>(Collections.nCopies(Q, -1));
+        List<Integer> input = new ArrayList<Integer>(Collections.nCopies(Q, -1));
+        Integer counter = 0;
+        boolean found = false;
+        distance.set(q0, 0);
+
+        // we very well could have no prefix
+        if (q0 == target) {
+            return "";
+        }
+        while(!found) {
+            for (int i=0; i<Q; i++) {
+                if (distance.get(i)!=counter)
+                    continue;
+                for (Integer x : d.get(i).keySet()) {
+                    for (Integer y : d.get(i).get(x)) {
+                        if (y == target)
+                            found = true;
+                        if (distance.get(y) == -1) {
+                            distance.set(y, counter+1);
+                            prev.set(y, i);
+                            input.set(y, x);
+                        }
+                    }
+                }
+            }
+            counter++;
+        }
+        List<Integer> path = new ArrayList<Integer>();
+        Integer current = target;
+
+        while (current != q0) {
+            path.add(input.get(current));
+            current = prev.get(current);
+        }
+        Collections.reverse(path);
+        String result = "";
+        for (Integer node : path) {
+            result += decode(node).toString();
+        }
+        return result;
+    }
+
+    // helper function for inf, find an input string that leads from the specified state to an accepting state
+    private String constructSuffix(Integer target) {
+        List<Integer> distance = new ArrayList<Integer>(Collections.nCopies(Q, -1));
+        List<Integer> prev = new ArrayList<Integer>(Collections.nCopies(Q, -1));
+        List<Integer> input = new ArrayList<Integer>(Collections.nCopies(Q, -1));
+        Integer counter = 0;
+        boolean found = false;
+        Integer endState = 0;
+        distance.set(target, 0);
+
+        // the starting state may indeed by accepting
+        if (O.get(target) != 0) {
+            return "";
+        }
+        while(!found) {
+            for (int i=0; i<Q; i++) {
+                if (distance.get(i)!=counter)
+                    continue;
+                for (Integer x : d.get(i).keySet()) {
+                    for (Integer y : d.get(i).get(x)) {
+                        if (O.get(y) != 0) {
+                            found = true;
+                            endState = y;
+                        }
+                        if (distance.get(y) == -1) {
+                            distance.set(y, counter+1);
+                            prev.set(y, i);
+                            input.set(y, x);
+                        }
+                    }
+                }
+            }
+            counter++;
+        }
+        List<Integer> path = new ArrayList<Integer>();
+        Integer current = endState;
+
+        while (current != target) {
+            path.add(input.get(current));
+            current = prev.get(current);
+        }
+        Collections.reverse(path);
+        String result = "";
+        for (Integer node : path) {
+            result += decode(node).toString();
+        }
+        return result;
     }
 
     public void applyAllRepresentations() throws Exception{
@@ -1413,7 +1513,7 @@ public class Automaton {
         copy(K);
     }
 
-    private void randomLabel() {
+    public void randomLabel() {
         if(label == null)label = new ArrayList<String>();
         else if(label.size() > 0)label = new ArrayList<String>();
         for(int i = 0 ; i < A.size();i++){
