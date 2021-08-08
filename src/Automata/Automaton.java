@@ -215,6 +215,16 @@ public class Automaton {
     // for use in inf command, records where we started our depth first search to find a cycle
     public Integer started;
 
+    // for use in test command, to gather a list of all accepted values of a specified length in lexicographic order
+    public List<String> accepted;
+
+    // for use in test command, tells us what length of solutions we are currently searching for in this subautomaton
+    public Integer searchLength;
+
+    // for use in test command, tells us the number of accepted strings remaining to be added to the main list, so we can end early if
+    // we find that many
+    public Integer maxNeeded;
+
     void make_adjacent(Integer K[]) {
         int q, t;
         for( q = 0; q <= num_states; ++q ) {
@@ -1490,6 +1500,45 @@ public class Automaton {
             result += decode(node).toString();
         }
         return result;
+    }
+
+    public void findAccepted(Integer searchLength, Integer maxNeeded) {
+        this.accepted = new ArrayList<String>();
+        this.searchLength = searchLength;
+        this.maxNeeded = maxNeeded;
+        findAcceptedHelper(0, "", q0);
+    }
+
+    private boolean findAcceptedHelper(Integer curLength, String path, Integer state) {
+        if (curLength == searchLength) {
+            // if we reach an accepting state of desired length, we add the string we've formed to our subautomata list
+            if (O.get(state) != 0) {
+                accepted.add(path);
+                if (accepted.size() >= maxNeeded) {
+                    return true;
+                }
+            }
+            else {
+                return false;
+            }
+        }
+        for (Integer x : d.get(state).keySet()) {
+            for (Integer y : d.get(state).get(x)) {
+                String input = decode(x).toString();
+
+                // we remove brackets if we have a single arity input that is between 0 and 9 (and hence unambiguous)
+                if (A.size() == 1) {
+                    if (decode(x).get(0) >= 0 && decode(x).get(0) <= 9) {
+                        input = input.substring(1, input.length()-1);
+                    }
+                }
+                // if we've already found as much as we need, then there's no need to search further; we propagate the signal
+                if (findAcceptedHelper(curLength+1, path + input, y)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     public void applyAllRepresentations() throws Exception{
