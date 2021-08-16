@@ -90,7 +90,7 @@ public class Computer {
 		}
 	}
 	public void drawAutomaton(String address) throws Exception{
-		result.M.draw(address, predicate_string);
+		result.M.draw(address, predicate_string, false);
 	}
 	public void write(String address){
 		result.M.write(address);

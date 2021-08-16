@@ -265,7 +265,7 @@ public class OstrowskiNumeration {
             UtilityMethods.get_address_for_custom_bases() + "msd_" + this.name + "_addition.txt";
         File f = new File(adder_file_name);
         if(f.exists() && !f.isDirectory()) {
-            throw new Exception("Error: number system " + this.name + " already exisis.");
+            System.out.println("Warning: number system " + this.name + "was previously defined and is being overwritten.");
         }
 
         adder.write(adder_file_name);

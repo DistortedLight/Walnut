@@ -540,7 +540,9 @@ public class IntegrationTest {
 		// eval tests based on morphism and image commands
 		L.add("eval test394 \"Ai,j,n (n>=3) => ~$fsrevchk(i,j,n)\";");
 		L.add("eval test395 \"~Ep,n (p>=1) & (Ai (i>=n) => FS[i]=FS[i+p])\";");
-
+		L.add("eval test396 \"An n>=2 => ~(Ei $gamard6allconj(i,n))\";");
+		L.add("eval test397 \"An n>=3 => ~(Ei $gamard3allconj(i,n))\";");
+		L.add("eval test398 \"Ai WSA[i]=@0 <=> (Ex $power2(x) & (i+2=5*x|i+2=7*x))\";");
 
 	}
 	public void runPerformanceTest(String name,int numberOfRuns) throws Exception{

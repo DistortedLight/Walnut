@@ -215,6 +215,16 @@ public class Automaton {
     // for use in inf command, records where we started our depth first search to find a cycle
     public Integer started;
 
+    // for use in test command, to gather a list of all accepted values of a specified length in lexicographic order
+    public List<String> accepted;
+
+    // for use in test command, tells us what length of solutions we are currently searching for in this subautomaton
+    public Integer searchLength;
+
+    // for use in test command, tells us the number of accepted strings remaining to be added to the main list, so we can end early if
+    // we find that many
+    public Integer maxNeeded;
+
     void make_adjacent(Integer K[]) {
         int q, t;
         for( q = 0; q <= num_states; ++q ) {
@@ -1094,8 +1104,12 @@ public class Automaton {
             System.out.println(msg);
         }
 
+        totalize(print,prefix+" ",log);
+        M.totalize(print,prefix+" ",log);
         Automaton N = crossProduct(M,"&",print,prefix,log);
+
         N.minimize(print,prefix+" ",log);
+        N.applyAllRepresentations();
 
         long timeAfter = System.currentTimeMillis();
         if(print){
@@ -1352,33 +1366,178 @@ public class Automaton {
         return first;
     }
 
-    // Determines whether an automaton accepts infinitely many values. This is true iff there exists a cycle in a minimized
-    // version of the automaton
-    public boolean infinite() {
+    // Determines whether an automaton accepts infinitely many values. If it does, a regex of infinitely many accepted values (not all)
+    // is given. This is true iff there exists a cycle in a minimized version of the automaton, which previously had leading or
+    // trailing zeroes removed according to whether it was msd or lsd
+    public String infinite() throws Exception {
+        // make sure the automaton is minimized
+        minimize(false, "", null);
+
         for (int i=0; i<Q; i++) {
             visited = new HashSet<Integer>();
             started = i;
-            if(infiniteHelper(i)) {
-                return true;
+            String cycle = infiniteHelper(i, "");
+            // once a cycle is detected, we compute a prefix leading to state i and a suffix from state i to an accepting state
+            if(cycle != "") {
+                return constructPrefix(i) + "(" + cycle + ")*" + constructSuffix(i);
             }
         }
-        return false;
+        return ""; // an empty string signals that we have failed to find a cycle
     }
 
     // helper function for our DFS to facilitate recursion
-    private boolean infiniteHelper(Integer state) {
+    private String infiniteHelper(Integer state, String result) {
         if(visited.contains(state)) {
-            return state == started;
+            if(state == started) {
+                return result;
+            }
+            return "";
         }
         visited.add(state);
         for (Integer x : d.get(state).keySet()) {
             for (Integer y : d.get(state).get(x)) {
-                if (infiniteHelper(y)) {
-                    return true;
+                // this adds brackets even when inputs have arity 1 - this is fine, since we just want a usable infinite regex
+                String cycle = infiniteHelper(y, result + decode(x).toString());
+                if (cycle != "") {
+                    return cycle;
                 }
             }
         }
         visited.remove(state);
+        return "";
+    }
+
+    // helper function for inf, finds an input string that leads from q0 to the specified state
+    private String constructPrefix(Integer target) {
+        List<Integer> distance = new ArrayList<Integer>(Collections.nCopies(Q, -1));
+        List<Integer> prev = new ArrayList<Integer>(Collections.nCopies(Q, -1));
+        List<Integer> input = new ArrayList<Integer>(Collections.nCopies(Q, -1));
+        Integer counter = 0;
+        boolean found = false;
+        distance.set(q0, 0);
+
+        // we very well could have no prefix
+        if (q0 == target) {
+            return "";
+        }
+        while(!found) {
+            for (int i=0; i<Q; i++) {
+                if (distance.get(i)!=counter)
+                    continue;
+                for (Integer x : d.get(i).keySet()) {
+                    for (Integer y : d.get(i).get(x)) {
+                        if (y == target)
+                            found = true;
+                        if (distance.get(y) == -1) {
+                            distance.set(y, counter+1);
+                            prev.set(y, i);
+                            input.set(y, x);
+                        }
+                    }
+                }
+            }
+            counter++;
+        }
+        List<Integer> path = new ArrayList<Integer>();
+        Integer current = target;
+
+        while (current != q0) {
+            path.add(input.get(current));
+            current = prev.get(current);
+        }
+        Collections.reverse(path);
+        String result = "";
+        for (Integer node : path) {
+            result += decode(node).toString();
+        }
+        return result;
+    }
+
+    // helper function for inf, find an input string that leads from the specified state to an accepting state
+    private String constructSuffix(Integer target) {
+        List<Integer> distance = new ArrayList<Integer>(Collections.nCopies(Q, -1));
+        List<Integer> prev = new ArrayList<Integer>(Collections.nCopies(Q, -1));
+        List<Integer> input = new ArrayList<Integer>(Collections.nCopies(Q, -1));
+        Integer counter = 0;
+        boolean found = false;
+        Integer endState = 0;
+        distance.set(target, 0);
+
+        // the starting state may indeed by accepting
+        if (O.get(target) != 0) {
+            return "";
+        }
+        while(!found) {
+            for (int i=0; i<Q; i++) {
+                if (distance.get(i)!=counter)
+                    continue;
+                for (Integer x : d.get(i).keySet()) {
+                    for (Integer y : d.get(i).get(x)) {
+                        if (O.get(y) != 0) {
+                            found = true;
+                            endState = y;
+                        }
+                        if (distance.get(y) == -1) {
+                            distance.set(y, counter+1);
+                            prev.set(y, i);
+                            input.set(y, x);
+                        }
+                    }
+                }
+            }
+            counter++;
+        }
+        List<Integer> path = new ArrayList<Integer>();
+        Integer current = endState;
+
+        while (current != target) {
+            path.add(input.get(current));
+            current = prev.get(current);
+        }
+        Collections.reverse(path);
+        String result = "";
+        for (Integer node : path) {
+            result += decode(node).toString();
+        }
+        return result;
+    }
+
+    public void findAccepted(Integer searchLength, Integer maxNeeded) {
+        this.accepted = new ArrayList<String>();
+        this.searchLength = searchLength;
+        this.maxNeeded = maxNeeded;
+        findAcceptedHelper(0, "", q0);
+    }
+
+    private boolean findAcceptedHelper(Integer curLength, String path, Integer state) {
+        if (curLength == searchLength) {
+            // if we reach an accepting state of desired length, we add the string we've formed to our subautomata list
+            if (O.get(state) != 0) {
+                accepted.add(path);
+                if (accepted.size() >= maxNeeded) {
+                    return true;
+                }
+            }
+            else {
+                return false;
+            }
+        }
+        for (Integer x : d.get(state).keySet()) {
+            for (Integer y : d.get(state).get(x)) {
+                String input = decode(x).toString();
+
+                // we remove brackets if we have a single arity input that is between 0 and 9 (and hence unambiguous)
+                if (A.size() == 1) {
+                    if (decode(x).get(0) >= 0 && decode(x).get(0) <= 9) {
+                        input = input.substring(1, input.length()-1);
+                    }
+                }
+                // if we've already found as much as we need, then there's no need to search further; we propagate the signal
+                if (findAcceptedHelper(curLength+1, path + input, y)) {
+                    return true;
+                }
+            }
+        }
         return false;
     }
 
@@ -1403,7 +1562,7 @@ public class Automaton {
         copy(K);
     }
 
-    private void randomLabel() {
+    public void randomLabel() {
         if(label == null)label = new ArrayList<String>();
         else if(label.size() > 0)label = new ArrayList<String>();
         for(int i = 0 ; i < A.size();i++){
@@ -1623,11 +1782,12 @@ public class Automaton {
     /**
      * Writes down this automaton to a .gv file given by the address. It uses the predicate that
      * caused this automaton as the label of this drawing.
-     * This automaton can be a non deterministic automaton but cannot be a DFAO. In case of a DFAO the drawing
-     * does not contain state outputs.
+     * Unlike prior versions of Walnut, this automaton can be a non deterministic automaton and also a DFAO. 
+     * In case of a DFAO the drawing contains state outputs with a slash (eg. "0/2" represents an output
+     * of 2 from state 0)
      * @param address
      */
-    public void draw(String address,String predicate)throws Exception{
+    public void draw(String address,String predicate, boolean isDFAO)throws Exception{
         GraphViz gv = new GraphViz();
         if(TRUE_FALSE_AUTOMATON){
             gv.addln(gv.start_graph());
@@ -1649,7 +1809,9 @@ public class Automaton {
             gv.addln("label = \""+ UtilityMethods.toTuple(label) +": "+predicate+"\";");
             gv.addln("rankdir = LR;");
             for(int q = 0 ; q < Q;q++){
-                if(O.get(q)!=0)
+                if(isDFAO)
+                    gv.addln("node [shape = circle, label=\""+q+"/"+O.get(q)+"\", fontsize=12]"+q +";");
+                else if(O.get(q)!=0)
                     gv.addln("node [shape = doublecircle, label=\""+q+"\", fontsize=12]"+q +";");
                 else
                     gv.addln("node [shape = circle, label=\""+q+"\", fontsize=12]"+q +";");

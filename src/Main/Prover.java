@@ -41,7 +41,7 @@ import Automata.OstrowskiNumeration;
  * @author Hamoon
  */
 public class Prover {
-	static String REGEXP_FOR_THE_LIST_OF_COMMANDS = "(eval|def|macro|reg|load|ost|exit|quit|cls|clear|combine|morphism|promote|image|inf)";
+	static String REGEXP_FOR_THE_LIST_OF_COMMANDS = "(eval|def|macro|reg|load|ost|exit|quit|cls|clear|combine|morphism|promote|image|inf|test)";
 	static String REGEXP_FOR_EMPTY_COMMAND = "^\\s*(;|::|:)\\s*$";
 	/**
 	 * the high-level scheme of a command is a name followed by some arguments and ending in either ; : or ::
@@ -117,6 +117,10 @@ public class Prover {
 	static String REGEXP_FOR_inf_COMMAND = "^\\s*inf\\s+([a-zA-Z]\\w*)\\s*(;|::|:)\\s*$";
 	static Pattern PATTERN_FOR_inf_COMMAND = Pattern.compile(REGEXP_FOR_inf_COMMAND);
 	static int GROUP_INF_NAME = 1;
+
+	static String REGEXP_FOR_test_COMMAND = "^\\s*test\\s+([a-zA-Z]\\w*)\\s*(\\d+)\\s*(;|::|:)\\s*$";
+	static Pattern PATTERN_FOR_test_COMMAND = Pattern.compile(REGEXP_FOR_test_COMMAND);
+	static int GROUP_TEST_NAME = 1, GROUP_TEST_NUM = 2;
 
 	/**
 	 * if the command line argument is not empty, we treat args[0] as a filename.
@@ -280,6 +284,8 @@ public class Prover {
 			imageCommand(s);
 		} else if (commandName.equals("inf")) {
 			infCommand(s);
+		} else if (commandName.equals("test")) {
+			testCommand(s);
 		} else {
 			throw new Exception("Invalid command " + commandName + ".");
 		}
@@ -473,7 +479,6 @@ public class Prover {
 		String baseexp = m.group(R_REGEXP);
 		Matcher m2 = PATTERN_FOR_AN_ALPHABET_VECTOR.matcher(baseexp);
 		// if we haven't had to replace any input vectors with unicode, we use the legacy method of constructing the automaton
-		Boolean replaced = false;
 		while (m2.find()) {
 			List<Integer> L = new ArrayList<Integer>();
 			String alphabetVector = m2.group();
@@ -497,26 +502,21 @@ public class Prover {
 			char replacement = (char)vectorEncoding;
 			String replacementStr = Character.toString(replacement);
 			baseexp = baseexp.replace(alphabetVectorCopy, replacementStr);
-			replaced = true;
 		}
 		M.alphabetSize = 1;
 		for (List<Integer> alphlist : M.A) {
 			M.alphabetSize *= alphlist.size();
 		}
 
-		Automaton R;
+		// We should always do this with replacement, since we may have regexes such as "...", which accepts any three characters
+		// in a row, on an alphabet containing bracketed characters. We don't make any replacements here, but they are implicitly made
+		// when we intersect with our alphabet(s).
+		Automaton R = new Automaton(baseexp,M.A,M.alphabetSize);
+		R.A = M.A;
+		R.alphabetSize = M.alphabetSize;
+		R.NS = numSys;
 
-		if (replaced) {
-			R = new Automaton(baseexp,M.A,M.alphabetSize);
-			R.A = M.A;
-			R.alphabetSize = M.alphabetSize;
-			R.NS = numSys;
-		}
-		else {
-			// in this case, there will only be one alphabet vector
-			R = new Automaton(baseexp,alphabets.get(0),ns);
-		}
-		R.draw(UtilityMethods.get_address_for_result()+m.group(R_NAME)+".gv",m.group(R_REGEXP));
+		R.draw(UtilityMethods.get_address_for_result()+m.group(R_NAME)+".gv",m.group(R_REGEXP), false);
 		R.write(UtilityMethods.get_address_for_result()+m.group(R_NAME)+".txt");
 		R.write(UtilityMethods.get_address_for_automata_library()+m.group(R_NAME)+".txt");
 
@@ -564,8 +564,7 @@ public class Prover {
 		automataNames.remove(0);
 
 		Automaton C = first.combine(automataNames, outputs, printSteps, prefix, log);
-		// currently drawing DFAOs is not supported, so outputs are not shown in the drawing
-		C.draw(UtilityMethods.get_address_for_result()+m.group(GROUP_COMBINE_NAME)+".gv", s);
+		C.draw(UtilityMethods.get_address_for_result()+m.group(GROUP_COMBINE_NAME)+".gv", s, true);
 		C.write(UtilityMethods.get_address_for_result()+m.group(GROUP_COMBINE_NAME)+".txt");
 		C.write(UtilityMethods.get_address_for_words_library()+m.group(GROUP_COMBINE_NAME)+".txt");
 
@@ -595,7 +594,7 @@ public class Prover {
 		}
 		Morphism h = new Morphism(UtilityMethods.get_address_for_morphism_library()+m.group(GROUP_PROMOTE_MORPHISM)+".txt");
 		Automaton P = h.toWordAutomaton();
-		P.draw(UtilityMethods.get_address_for_result()+m.group(GROUP_PROMOTE_NAME)+".gv", s);
+		P.draw(UtilityMethods.get_address_for_result()+m.group(GROUP_PROMOTE_NAME)+".gv", s, true);
 		P.write(UtilityMethods.get_address_for_result()+m.group(GROUP_PROMOTE_NAME)+".txt");
 		P.write(UtilityMethods.get_address_for_words_library()+m.group(GROUP_PROMOTE_NAME)+".txt");
 
@@ -631,19 +630,90 @@ public class Prover {
 		TestCase retrieval = combineCommand(combineString);
 		Automaton I = retrieval.result.clone();
 		
-		I.draw(UtilityMethods.get_address_for_result()+m.group(GROUP_IMAGE_NEW_NAME)+".gv", s);
+		I.draw(UtilityMethods.get_address_for_result()+m.group(GROUP_IMAGE_NEW_NAME)+".gv", s, true);
 		I.write(UtilityMethods.get_address_for_result()+m.group(GROUP_IMAGE_NEW_NAME)+".txt");
 		I.write(UtilityMethods.get_address_for_words_library()+m.group(GROUP_IMAGE_NEW_NAME)+".txt");
 		return new TestCase(s,I,"","","");
 	}
 
-	public static void infCommand(String s) throws Exception {
+	public static boolean infCommand(String s) throws Exception {
 		Matcher m = PATTERN_FOR_inf_COMMAND.matcher(s);
 		if(!m.find()) {
 			throw new Exception("Invalid use of inf command.");
 		}
 		Automaton M = new Automaton(UtilityMethods.get_address_for_automata_library()+m.group(GROUP_INF_NAME)+".txt");
-		System.out.println(M.infinite());
+		M = removeLeadTrailZeroes(M, m.group(GROUP_INF_NAME));
+		String infReg = M.infinite();
+		if (infReg == "") {
+			System.out.println("Automaton " + m.group(GROUP_INF_NAME) + " accepts finitely many values.");
+			return false;
+		}
+		else {
+			System.out.println(infReg);
+			return true;
+		}
+	}
+
+	public static void testCommand(String s) throws Exception {
+		Matcher m = PATTERN_FOR_test_COMMAND.matcher(s);
+		if(!m.find()) {
+			throw new Exception("Invalid use of test command.");
+		}
+
+		Integer needed = Integer.parseInt(m.group(GROUP_TEST_NUM));
+
+		// We find the first n inputs accepted by our automaton, lexicographically. If less than n inputs are accepted,
+    	// we output all that are.
+		Automaton M = new Automaton(UtilityMethods.get_address_for_automata_library()+m.group(GROUP_TEST_NAME)+".txt");
+
+		// we don't want to count multiple representations of the same value as distinct accepted values
+		M = removeLeadTrailZeroes(M, m.group(GROUP_TEST_NAME));
+
+		// We will be intersecting this automaton with various regex automata, so it needs to be labelled.
+		M.randomLabel();
+
+		String infSubcommand = "inf " + m.group(GROUP_TEST_NAME) + ";";
+		boolean infinite = infCommand(infSubcommand);
+		
+		String incLengthReg = "";
+		incLengthReg += "reg " + m.group(GROUP_TEST_NAME) + "_len ";
+		for (int i=0; i<M.A.size(); i++) {
+			String alphaString = M.A.get(i).toString();
+			alphaString = alphaString.substring(1, alphaString.length()-1);
+			alphaString = "{" + alphaString + "} ";
+			incLengthReg += alphaString;
+		}
+
+		String dotReg = "";
+        int searchLength = 0;
+		List<String> accepted = new ArrayList<String>();
+        while(true) {
+            searchLength++;
+            dotReg += ".";
+			TestCase retrieval = regCommand(incLengthReg + "\"" + dotReg + "\";");
+			Automaton R = retrieval.result.clone();
+
+			// and-ing automata uses the cross product routine, which requires labeled automata
+			R.label = M.label;
+			Automaton N = M.and(R, false, null, null);
+			N.findAccepted(searchLength, needed - accepted.size());
+			accepted.addAll(N.accepted);
+			if(accepted.size() >= needed) {
+				break;
+			}
+
+            // If our automaton accepts finitely many inputs, it does not have a non-redundant cycle, and so the highest length input that could be
+            // accepted is equal to the number of states in the automaton
+            if (!(infinite) && (searchLength >= M.Q)) {
+                break;
+            }
+        }
+		if (accepted.size() < needed) {
+			System.out.println(m.group(GROUP_TEST_NAME) + " only accepts " + Integer.toString(accepted.size()) + " inputs, which are as follows: ");
+		}
+		for (String input : accepted) {
+			System.out.println(input);
+		}
 	}
 
 	public static void ostCommand(String s) throws Exception {
@@ -683,5 +753,41 @@ public class Prover {
 		UtilityMethods.removeDuplicates(L);
 
 		return L;
+	}
+
+	private static Automaton removeLeadTrailZeroes(Automaton M, String name) throws Exception {
+		// When dealing with enumerating values (eg. inf and test commands), we remove leading zeroes in the case of msd
+		// and trailing zeroes in the case of lsd. To do this, we construct a reg subcommand that generates the complement
+		// of zero-prefixed strings for msd and zero suffixed strings for lsd, then intersect this with our original automaton.
+		String removeZeroesReg = "";
+		String zero = "";
+		if (M.A.size() == 1) {
+			zero = "0";
+		}
+		else {
+			zero = "[" + String.join(",", Collections.nCopies(M.A.size(), "0")) + "]";
+		}
+
+		removeZeroesReg += "reg " + name + "_rem0 ";
+		for (int i=0; i<M.A.size(); i++) {
+			String alphaString = M.A.get(i).toString();
+			alphaString = alphaString.substring(1, alphaString.length()-1);
+			alphaString = "{" + alphaString + "} ";
+			removeZeroesReg += alphaString;
+		}
+
+		if (M.NS.get(0).isMsd()) {
+			removeZeroesReg += "\"~(" + zero + ".*)\";";
+		}
+		else {
+			removeZeroesReg += "\"~(.*" + zero + ")\";";
+		}
+		TestCase retrieval = regCommand(removeZeroesReg);
+		Automaton R = retrieval.result.clone();
+		// and-ing automata uses the cross product routine, which requires labeled automata
+		M.randomLabel();
+		R.label = M.label;
+		M = M.and(R, false, null, null);
+		return M;
 	}
 }
