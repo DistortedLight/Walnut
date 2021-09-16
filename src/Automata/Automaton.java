@@ -1104,12 +1104,8 @@ public class Automaton {
             System.out.println(msg);
         }
 
-        totalize(print,prefix+" ",log);
-        M.totalize(print,prefix+" ",log);
         Automaton N = crossProduct(M,"&",print,prefix,log);
-
         N.minimize(print,prefix+" ",log);
-        N.applyAllRepresentations();
 
         long timeAfter = System.currentTimeMillis();
         if(print){
