@@ -18,6 +18,8 @@
 
 package Main;
 
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 /**
@@ -46,37 +48,91 @@ public class UtilityMethods {
 	}
 
 	public static String get_address_for_command_files() {
+		try {
+			Files.createDirectories(Paths.get(dir + ADDRESS_FOR_COMMAND_FILES));
+		} catch (java.io.IOException ioe) {
+			System.err.println("Permission denied, directory could not be created.");
+			ioe.printStackTrace();
+		}
 		return dir + ADDRESS_FOR_COMMAND_FILES;
 	}
 
 	public static String get_address_for_automata_library() {
+		try {
+			Files.createDirectories(Paths.get(dir + ADDRESS_FOR_AUTOMATA_LIBRARY));
+		} catch (java.io.IOException ioe) {
+			System.err.println("Permission denied, directory could not be created.");
+			ioe.printStackTrace();
+		}
 		return dir + ADDRESS_FOR_AUTOMATA_LIBRARY;
 	}
 
 	public static String get_address_for_macro_library() {
+		try {
+			Files.createDirectories(Paths.get(dir + ADDRESS_FOR_MACRO_LIBRARY));
+		} catch (java.io.IOException ioe) {
+			System.err.println("Permission denied, directory could not be created.");
+			ioe.printStackTrace();
+		}
 		return dir + ADDRESS_FOR_MACRO_LIBRARY;
 	}
 
 	public static String get_address_for_result() {
+		try {
+			Files.createDirectories(Paths.get(dir + ADDRESS_FOR_RESULT));
+		} catch (java.io.IOException ioe) {
+			System.err.println("Permission denied, directory could not be created.");
+			ioe.printStackTrace();
+		}
 		return dir + ADDRESS_FOR_RESULT;
 	}
 
 	public static String get_address_for_custom_bases() {
+		try {
+			Files.createDirectories(Paths.get(dir + ADDRESS_FOR_CUSTOM_BASES));
+		} catch (java.io.IOException ioe) {
+			System.err.println("Permission denied, directory could not be created.");
+			ioe.printStackTrace();
+		}
 		return dir + ADDRESS_FOR_CUSTOM_BASES;
 	}
 
 	public static String get_address_for_words_library() {
+		try {
+			Files.createDirectories(Paths.get(dir + ADDRESS_FOR_WORDS_LIBRARY));
+		} catch (java.io.IOException ioe) {
+			System.err.println("Permission denied, directory could not be created.");
+			ioe.printStackTrace();
+		}
 		return dir + ADDRESS_FOR_WORDS_LIBRARY;
 	}
 
 	public static String get_address_for_morphism_library() {
+		try {
+			Files.createDirectories(Paths.get(dir + ADDRESS_FOR_MORPHISM_LIBRARY));
+		} catch (java.io.IOException ioe) {
+			System.err.println("Permission denied, directory could not be created.");
+			ioe.printStackTrace();
+		}
 		return dir + ADDRESS_FOR_MORPHISM_LIBRARY;
 	}
 
 	public static String get_address_for_test_library() {
+		try {
+			Files.createDirectories(Paths.get(dir + ADDRESS_FOR_TEST_LIBRARY));
+		} catch (java.io.IOException ioe) {
+			System.err.println("Permission denied, directory could not be created.");
+			ioe.printStackTrace();
+		}
 		return dir + ADDRESS_FOR_TEST_LIBRARY;
 	}
 	public static String get_address_for_integration_test_results() {
+		try {
+			Files.createDirectories(Paths.get(dir + ADDRESS_FOR_INTEGRATION_TEST_RESULTS));
+		} catch (java.io.IOException ioe) {
+			System.err.println("Permission denied, directory could not be created.");
+			ioe.printStackTrace();
+		}
 		return dir + ADDRESS_FOR_INTEGRATION_TEST_RESULTS;
 	}
 
